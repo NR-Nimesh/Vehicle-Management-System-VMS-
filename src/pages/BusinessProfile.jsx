@@ -49,20 +49,20 @@ export default function BusinessProfile() {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     setSuccess(false);
 
-    // Simulate saving delay for premium feedback
-    setTimeout(() => {
-      updateBusinessProfile(formData);
+    try {
+      await updateBusinessProfile(formData);
       setSaving(false);
       setSuccess(true);
-
-      // Hide success banner after 3 seconds
       setTimeout(() => setSuccess(false), 3000);
-    }, 800);
+    } catch (error) {
+      console.error('Failed to save business profile', error);
+      setSaving(false);
+    }
   };
 
   return (

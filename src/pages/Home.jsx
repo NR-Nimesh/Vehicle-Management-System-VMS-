@@ -22,25 +22,28 @@ export default function Home() {
     const total = bills.reduce((sum, bill) => sum + (parseFloat(bill.total) || 0), 0);
     const plates = new Set(bills.map(bill => bill.vehicleNumber?.toUpperCase()).filter(Boolean));
     
-    // Fetch items count from local storage
-    let partCount = 0;
-    try {
-      const storedItems = localStorage.getItem('vms_items');
-      if (storedItems) {
-        partCount = JSON.parse(storedItems).length;
-      } else {
-        partCount = 5; // seed default
+    // Fetch items count from API
+    const fetchItemCount = async () => {
+      try {
+        const { apiRequest } = await import('../utils/api.js');
+        const items = await apiRequest('/items');
+        setStats({
+          totalSales: total,
+          invoiceCount: bills.length,
+          uniqueVehicles: plates.size,
+          itemsCount: items.length
+        });
+      } catch (e) {
+        setStats({
+          totalSales: total,
+          invoiceCount: bills.length,
+          uniqueVehicles: plates.size,
+          itemsCount: 0
+        });
       }
-    } catch (e) {
-      partCount = 0;
-    }
-
-    setStats({
-      totalSales: total,
-      invoiceCount: bills.length,
-      uniqueVehicles: plates.size,
-      itemsCount: partCount
-    });
+    };
+    
+    fetchItemCount();
   }, [bills]);
 
   const handleCreateBillClick = () => {
@@ -187,7 +190,7 @@ export default function Home() {
               <Package size={22} />
             </div>
             <h3 className="text-lg font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">
-              Inventory Catalog
+              Items
             </h3>
             <p className="text-slate-400 text-xs mt-2 leading-relaxed">
               Maintain spare parts inventory listings. Adjust pricing schemas, track parts availability, or log additions/modifications.
@@ -209,7 +212,7 @@ export default function Home() {
               <Briefcase size={22} />
             </div>
             <h3 className="text-lg font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">
-              Business Settings
+              Business Profile
             </h3>
             <p className="text-slate-400 text-xs mt-2 leading-relaxed">
               Configure default company information, upload base64 corporate logos, record email/phone metadata, and list tax IDs.

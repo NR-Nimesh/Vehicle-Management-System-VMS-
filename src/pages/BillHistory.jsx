@@ -122,7 +122,7 @@ export default function BillHistory() {
         />
         <div className="flex justify-between items-center mt-4 text-xs text-slate-500 font-semibold px-2">
           <span>Found {sortedBills.length} records</span>
-          <span>Transactions persistent in Local Storage</span>
+          <span>Transactions stored directly in vms_db</span>
         </div>
       </div>
 
@@ -163,21 +163,6 @@ export default function BillHistory() {
                       <p className="text-slate-400">Phone: <span className="text-slate-200">{selectedDetailBill.customerPhone || 'N/A'}</span></p>
                     </div>
                   </div>
-
-                  {/* Business Details */}
-                  <div className="border border-slate-800 rounded-xl p-4 bg-slate-950/10">
-                    <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1">
-                      <Briefcase size={13} /> Business Details
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-slate-400">Company Name: <span className="text-slate-200 font-semibold">{selectedDetailBill.businessName || 'AutoDrive Services'}</span></p>
-                      <p className="text-slate-400">Contact: <span className="text-slate-200">{selectedDetailBill.businessPhone || 'N/A'}</span></p>
-                      <p className="text-slate-400">Email: <span className="text-slate-200">{selectedDetailBill.businessEmail || 'N/A'}</span></p>
-                      {selectedDetailBill.businessTaxNumber && (
-                        <p className="text-slate-400">Tax Registration: <span className="text-slate-200">{selectedDetailBill.businessTaxNumber}</span></p>
-                      )}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Column 2: Vehicle */}
@@ -209,39 +194,9 @@ export default function BillHistory() {
 
               </div>
 
-              {/* Service & Calculated Summary Details */}
-              <div className="border border-slate-800 rounded-xl overflow-hidden">
-                <div className="bg-slate-950/40 px-4 py-3 border-b border-slate-800 text-xs font-bold text-slate-400 tracking-wider">
-                  TRANSACTION AND SERVICE OVERVIEW
-                </div>
-                <div className="p-4 bg-slate-950/10 space-y-4">
-                  <div className="flex justify-between items-center text-sm border-b border-slate-800/50 pb-2">
-                    <span className="text-slate-400">Service Rendered:</span>
-                    <span className="text-slate-200 font-semibold">{selectedDetailBill.serviceType}</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center pt-2">
-                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg">
-                      <span className="text-[10px] text-slate-500 block font-bold uppercase tracking-wider mb-1">Base Cost</span>
-                      <span className="text-sm font-semibold text-slate-300">${Number(selectedDetailBill.amount).toFixed(2)}</span>
-                    </div>
-
-                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg">
-                      <span className="text-[10px] text-slate-500 block font-bold uppercase tracking-wider mb-1">Tax Added</span>
-                      <span className="text-sm font-semibold text-rose-400">+${Number(selectedDetailBill.tax).toFixed(2)}</span>
-                    </div>
-
-                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg">
-                      <span className="text-[10px] text-slate-500 block font-bold uppercase tracking-wider mb-1">Discount</span>
-                      <span className="text-sm font-semibold text-emerald-400">-${Number(selectedDetailBill.discount).toFixed(2)}</span>
-                    </div>
-
-                    <div className="p-3 bg-indigo-900/20 border border-indigo-500/20 rounded-lg">
-                      <span className="text-[10px] text-indigo-400 block font-bold uppercase tracking-wider mb-1">Grand Total</span>
-                      <span className="text-base font-extrabold text-indigo-300">${Number(selectedDetailBill.total).toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
+              {/* Embedded Invoice Receipt */}
+              <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950 p-4">
+                <InvoicePreview bill={selectedDetailBill} />
               </div>
             </div>
 

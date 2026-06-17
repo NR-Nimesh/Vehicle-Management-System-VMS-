@@ -20,8 +20,6 @@ export default function DataTable({
             <th className="py-4 px-4">Vehicle Number</th>
             <th className="py-4 px-4">Model</th>
             <th className="py-4 px-4">Customer</th>
-            <th className="py-4 px-4">Date</th>
-            <th className="py-4 px-4 text-right">Total</th>
             <th className="py-4 px-4 text-center">Actions</th>
           </tr>
         </thead>
@@ -68,16 +66,6 @@ export default function DataTable({
                   {bill.customerName}
                 </td>
 
-                {/* Billing Date */}
-                <td className="py-3 px-4 text-slate-400 text-xs">
-                  {bill.date}
-                </td>
-
-                {/* Total Cost */}
-                <td className="py-3 px-4 text-right font-bold text-indigo-300">
-                  ${Number(bill.total).toFixed(2)}
-                </td>
-
                 {/* Actions Row */}
                 <td className="py-3 px-4">
                   <div className="flex items-center justify-center gap-1">
@@ -88,46 +76,13 @@ export default function DataTable({
                     >
                       <Eye size={15} />
                     </button>
-                    
-                    <button
-                      onClick={() => onViewInvoice(bill)}
-                      className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/10 transition-colors border border-transparent hover:border-indigo-500/20"
-                      title="Preview Invoice"
-                    >
-                      <Printer size={15} className="w-3.5 h-3.5 inline mr-0.5" />
-                      Invoice
-                    </button>
-
-                    <button
-                      onClick={() => onEdit(bill)}
-                      className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-amber-500/10 transition-colors border border-transparent hover:border-amber-500/20"
-                      title="Edit Bill"
-                    >
-                      <Pencil size={15} />
-                    </button>
-
-                    <button
-                      onClick={() => onDownloadInvoice(bill)}
-                      className="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-emerald-500/10 transition-colors border border-transparent hover:border-emerald-500/20"
-                      title="Download PDF"
-                    >
-                      <Download size={15} />
-                    </button>
-
-                    <button
-                      onClick={() => onDelete(bill.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors border border-transparent hover:border-rose-500/20"
-                      title="Delete Bill"
-                    >
-                      <Trash2 size={15} />
-                    </button>
                   </div>
                 </td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="8" className="py-12 text-center text-slate-500 font-medium">
+              <td colSpan="6" className="py-12 text-center text-slate-500 font-medium">
                 No billing records found.
               </td>
             </tr>

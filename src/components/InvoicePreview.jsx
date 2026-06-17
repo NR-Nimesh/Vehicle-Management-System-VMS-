@@ -39,7 +39,7 @@ const InvoicePreview = forwardRef(({ bill }, ref) => {
         <div className="text-left sm:text-right flex flex-col justify-end">
           <span className="text-xs font-bold tracking-wider text-indigo-600 uppercase">INVOICE RECEIPT</span>
           <h1 className="text-xl font-mono font-bold text-slate-800 mt-1">{bill.invoiceNumber}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Date: {bill.date}</p>
+          <p className="text-xs text-slate-500 mt-0.5">Date: {bill.date ? (typeof bill.date === 'string' ? bill.date.split('T')[0] : bill.date) : ''}</p>
         </div>
       </div>
 
@@ -55,13 +55,6 @@ const InvoicePreview = forwardRef(({ bill }, ref) => {
         <div>
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">VEHICLE DETAILS</h3>
           <div className="flex gap-4">
-            {bill.vehiclePhoto && (
-              <img 
-                src={bill.vehiclePhoto} 
-                alt="Vehicle Photo" 
-                className="w-16 h-12 object-cover rounded-lg border border-slate-200" 
-              />
-            )}
             <div>
               <p className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-block">
                 {bill.vehicleNumber}

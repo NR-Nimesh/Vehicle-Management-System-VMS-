@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, Pencil, Trash2, Search, X, Check, ArrowUpDown } from 'lucide-react';
+import { apiRequest } from '../utils/api';
 
 const SEED_ITEMS = [
   { id: '1', code: 'PART-1024', name: 'Synthetic Engine Oil 5W-30', category: 'Lubricants', price: 49.99, stock: 45 },
@@ -24,22 +25,36 @@ export default function Items() {
     stock: ''
   });
 
-  // Load items
-  useEffect(() => {
-    const stored = localStorage.getItem('vms_items');
-    if (stored) {
-      setItems(JSON.parse(stored));
-    } else {
-      setItems(SEED_ITEMS);
-      localStorage.setItem('vms_items', JSON.stringify(SEED_ITEMS));
-    }
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sync to local storage
-  const syncItems = (newItems) => {
-    setItems(newItems);
-    localStorage.setItem('vms_items', JSON.stringify(newItems));
-  };
+  // Load items from database
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await apiRequest('/items');
+        if (data.length === 0) {
+          // Seed the database with default items if empty
+          await apiRequest('/items/_migrate/import', {
+            method: 'POST',
+            body: JSON.stringify({ items: SEED_ITEMS })
+          });
+          const seeded = await apiRequest('/items');
+          setItems(seeded);
+        } else {
+          setItems(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch items:', err);
+        setError('Could not connect to database. Please ensure the backend is running.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -58,38 +73,49 @@ export default function Items() {
     setShowForm(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this inventory item?')) {
-      const updated = items.filter(item => item.id !== id);
-      syncItems(updated);
+      try {
+        await apiRequest(`/items/${id}`, { method: 'DELETE' });
+        setItems(items.filter(item => item.id !== id));
+      } catch (err) {
+        console.error("Failed to delete item:", err);
+      }
     }
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     
     const itemPrice = parseFloat(form.price) || 0;
     const itemStock = parseInt(form.stock, 10) || 0;
 
-    if (editingItem) {
-      // Update existing
-      const updated = items.map(item => 
-        item.id === editingItem.id 
-          ? { ...item, code: form.code, name: form.name, category: form.category, price: itemPrice, stock: itemStock }
-          : item
-      );
-      syncItems(updated);
-    } else {
-      // Create new
-      const newItem = {
-        id: Date.now().toString(),
-        code: form.code || `PART-${Math.floor(1000 + Math.random() * 9000)}`,
-        name: form.name,
-        category: form.category,
-        price: itemPrice,
-        stock: itemStock
-      };
-      syncItems([newItem, ...items]);
+    const payload = {
+      code: form.code || `PART-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: form.name,
+      category: form.category,
+      price: itemPrice,
+      stock: itemStock
+    };
+
+    try {
+      if (editingItem) {
+        // Update existing
+        const updated = await apiRequest(`/items/${editingItem.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+        setItems(items.map(item => item.id === editingItem.id ? updated : item));
+      } else {
+        // Create new
+        const newItem = await apiRequest('/items', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        setItems([newItem, ...items]);
+      }
+    } catch (err) {
+      console.error("Failed to save item:", err);
     }
 
     // Reset
@@ -110,11 +136,11 @@ export default function Items() {
     setShowForm(true);
   };
 
-  // Filter items
-  const filteredItems = items.filter(item => 
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.code.toLowerCase().includes(search.toLowerCase()) ||
-    item.category.toLowerCase().includes(search.toLowerCase())
+  // Filter items - safely handle null values from DB
+  const filteredItems = items.filter(item =>
+    (item.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (item.code || '').toLowerCase().includes(search.toLowerCase()) ||
+    (item.category || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -137,6 +163,13 @@ export default function Items() {
           Add Item
         </button>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm flex items-center gap-2">
+          <span className="font-semibold">⚠ Database Error:</span> {error}
+        </div>
+      )}
 
       {/* Grid Layout containing Form and List */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -318,7 +351,7 @@ export default function Items() {
                           {item.category}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right font-semibold text-slate-200">${item.price.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right font-semibold text-slate-200">${Number(item.price || 0).toFixed(2)}</td>
                       <td className="py-3 px-4 text-center">
                         <span className={`font-semibold ${item.stock < 10 ? 'text-rose-400' : 'text-slate-300'}`}>
                           {item.stock}
@@ -344,6 +377,15 @@ export default function Items() {
                       </td>
                     </tr>
                   ))
+                ) : loading ? (
+                  <tr>
+                    <td colSpan="6" className="py-12 text-center text-slate-500">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading items from database...</span>
+                      </div>
+                    </td>
+                  </tr>
                 ) : (
                   <tr>
                     <td colSpan="6" className="py-8 text-center text-slate-500">
