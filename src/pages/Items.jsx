@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Package, Plus, Pencil, Trash2, Search, X, Check, ArrowUpDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Package, Plus, Pencil, Trash2, X, Check } from 'lucide-react';
+import SearchBar from '../components/SearchBar';
+import useFormFieldNavigation from '../hooks/useFormFieldNavigation';
 import { apiRequest } from '../utils/api';
 
 const SEED_ITEMS = [
@@ -27,6 +29,8 @@ export default function Items() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const formRef = useRef(null);
+  useFormFieldNavigation(formRef, showForm);
 
   // Load items from database
   useEffect(() => {
@@ -189,7 +193,7 @@ export default function Items() {
               </button>
             </div>
 
-            <form onSubmit={handleFormSubmit} className="space-y-4">
+            <form ref={formRef} onSubmit={handleFormSubmit} className="space-y-4">
               <div className="flex flex-col">
                 <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
                   Item Code *
@@ -201,7 +205,7 @@ export default function Items() {
                   value={form.code}
                   onChange={handleInputChange}
                   placeholder="e.g. PART-1234"
-                  className="glass-input text-sm"
+                  className="glass-input text-sm w-full"
                 />
               </div>
 
@@ -216,7 +220,7 @@ export default function Items() {
                   value={form.name}
                   onChange={handleInputChange}
                   placeholder="e.g. Synthetic Engine Oil"
-                  className="glass-input text-sm"
+                  className="glass-input text-sm w-full"
                 />
               </div>
 
@@ -252,7 +256,7 @@ export default function Items() {
                     value={form.price}
                     onChange={handleInputChange}
                     placeholder="29.99"
-                    className="glass-input text-sm"
+                    className="glass-input text-sm w-full"
                   />
                 </div>
 
@@ -267,7 +271,7 @@ export default function Items() {
                     value={form.stock}
                     onChange={handleInputChange}
                     placeholder="10"
-                    className="glass-input text-sm"
+                    className="glass-input text-sm w-full"
                   />
                 </div>
               </div>
@@ -307,23 +311,12 @@ export default function Items() {
           
           {/* Table Search Header */}
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="relative w-full flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type="text"
-                placeholder="Search by code, item name, or category..."
+            <div className="w-full flex-1">
+              <SearchBar
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="glass-input w-full pl-9 pr-4 text-sm"
+                onChange={setSearch}
+                placeholder="Search by code, item name, or category..."
               />
-              {search && (
-                <button 
-                  onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              )}
             </div>
           </div>
 

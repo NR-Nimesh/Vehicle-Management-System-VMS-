@@ -10,7 +10,14 @@ async function apiRequest(path, options = {}) {
   });
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data;
+  
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (e) {
+    // Response is not JSON (e.g., HTML error page)
+    throw new Error(`Server error (${response.status}): Invalid response format. ${text.substring(0, 100)}`);
+  }
 
   if (!response.ok) {
     throw new Error(data?.error || `API request failed: ${response.status}`);

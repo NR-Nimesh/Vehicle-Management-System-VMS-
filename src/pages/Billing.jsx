@@ -5,6 +5,14 @@ import { useReactToPrint } from 'react-to-print';
 import { generateInvoicePDF } from '../utils/generateInvoice';
 import { compressImage } from '../utils/imageCompressor';
 import InvoicePreview from '../components/InvoicePreview';
+import InputWithIcon from '../components/InputWithIcon';
+import useFormFieldNavigation from '../hooks/useFormFieldNavigation';
+import {
+  sanitizePhone,
+  sanitizeVehicleNumber,
+  normalizeEmail,
+  isValidPhone,
+} from '../utils/billingValidation';
 import {
   Calendar, Hash, User, Car, Phone, Mail,
   DollarSign, Percent, Tag, Download,
@@ -27,6 +35,8 @@ export default function Billing() {
   } = useBilling();
 
   const componentRef = useRef(null);
+  const formRef = useRef(null);
+  useFormFieldNavigation(formRef);
 
   // ── Form states ───────────────────────────────────────────────────────────
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -84,12 +94,12 @@ export default function Billing() {
       setDate(currentEditBill.date || new Date().toISOString().split('T')[0]);
       setInvoiceNumber(currentEditBill.invoiceNumber || '');
       setVehiclePhoto(currentEditBill.vehiclePhoto || '');
-      setVehicleNumber(currentEditBill.vehicleNumber || '');
+      setVehicleNumber(sanitizeVehicleNumber(currentEditBill.vehicleNumber || ''));
       setVehicleModel(currentEditBill.vehicleModel || '');
       setVehicleDescription(currentEditBill.vehicleDescription || '');
       setCustomerName(currentEditBill.customerName || '');
       setCustomerEmail(currentEditBill.customerEmail || '');
-      setCustomerPhone(currentEditBill.customerPhone || '');
+      setCustomerPhone(sanitizePhone(currentEditBill.customerPhone || ''));
       setBusinessName(currentEditBill.businessName || '');
       setBusinessPhone(currentEditBill.businessPhone || '');
       setBusinessEmail(currentEditBill.businessEmail || '');
@@ -111,12 +121,12 @@ export default function Billing() {
           setDate(draft.date || new Date().toISOString().split('T')[0]);
           setInvoiceNumber(draft.invoiceNumber || getNextInvoiceNumber());
           setVehiclePhoto(draft.vehiclePhoto || '');
-          setVehicleNumber(draft.vehicleNumber || '');
+          setVehicleNumber(sanitizeVehicleNumber(draft.vehicleNumber || ''));
           setVehicleModel(draft.vehicleModel || '');
           setVehicleDescription(draft.vehicleDescription || '');
           setCustomerName(draft.customerName || '');
           setCustomerEmail(draft.customerEmail || '');
-          setCustomerPhone(draft.customerPhone || '');
+          setCustomerPhone(sanitizePhone(draft.customerPhone || ''));
           setBusinessName(draft.businessName || '');
           setBusinessPhone(draft.businessPhone || '');
           setBusinessEmail(draft.businessEmail || '');
@@ -160,6 +170,27 @@ export default function Billing() {
     setServices(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row));
   };
 
+  const handlePhoneChange = (e) => {
+    setCustomerPhone(sanitizePhone(e.target.value));
+  };
+
+  const handleVehicleNumberChange = (e) => {
+    setVehicleNumber(sanitizeVehicleNumber(e.target.value));
+  };
+
+  const handleEmailBlur = () => {
+    setCustomerEmail((prev) => normalizeEmail(prev));
+  };
+
+  const handleEmailChange = (e) => {
+    const raw = e.target.value;
+    if (raw.includes('@')) {
+      setCustomerEmail(raw);
+    } else {
+      setCustomerEmail(raw.replace(/\s/g, ''));
+    }
+  };
+
   // ── Calculations ──────────────────────────────────────────────────────────
   const subtotal = services.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
   const taxVal = parseFloat(tax) || 0;
@@ -187,12 +218,12 @@ export default function Billing() {
     date,
     invoiceNumber,
     vehiclePhoto,
-    vehicleNumber: vehicleNumber.toUpperCase(),
+    vehicleNumber: sanitizeVehicleNumber(vehicleNumber),
     vehicleModel,
     vehicleDescription,
     customerName,
-    customerEmail,
-    customerPhone,
+    customerEmail: normalizeEmail(customerEmail),
+    customerPhone: sanitizePhone(customerPhone),
     businessName,
     businessPhone,
     businessEmail,
@@ -214,6 +245,13 @@ export default function Billing() {
       setNotification({
         type: 'error',
         message: 'Please complete all required fields (*): Customer Name, Vehicle Number, and Vehicle Model.'
+      });
+      return;
+    }
+    if (customerPhone && !isValidPhone(customerPhone)) {
+      setNotification({
+        type: 'error',
+        message: 'Phone number must contain exactly 10 digits (numbers only).'
       });
       return;
     }
@@ -323,7 +361,7 @@ export default function Billing() {
         </div>
 
         <div className="max-w-3xl">
-          <div className="space-y-6">
+          <div ref={formRef} className="space-y-6">
 
             {/* Inline notification banner */}
             {notification.message && (
@@ -348,17 +386,25 @@ export default function Billing() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Date</label>
-                  <div className="relative">
-                    <Calendar size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="glass-input pl-10 w-full" />
-                  </div>
+                  <InputWithIcon
+                    type="date"
+                    icon={Calendar}
+                    iconSize={15}
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Invoice Number</label>
-                  <div className="relative">
-                    <Hash size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                    <input type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="INV-0000" className="glass-input pl-10 w-full font-mono" />
-                  </div>
+                  <InputWithIcon
+                    type="text"
+                    icon={Hash}
+                    iconSize={15}
+                    value={invoiceNumber}
+                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                    placeholder="INV-0000"
+                    className="font-mono"
+                  />
                 </div>
               </div>
             </div>
@@ -376,17 +422,34 @@ export default function Billing() {
                 </div>
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Email Address</label>
-                  <div className="relative">
-                    <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                    <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="johndoe@example.com" className="glass-input pl-10 w-full" />
-                  </div>
+                  <InputWithIcon
+                    type="email"
+                    icon={Mail}
+                    iconSize={15}
+                    value={customerEmail}
+                    onChange={handleEmailChange}
+                    onBlur={handleEmailBlur}
+                    placeholder="username or name@gmail.com"
+                    inputMode="email"
+                    autoComplete="email"
+                  />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Phone Number</label>
-                  <div className="relative">
-                    <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                    <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="+91 98765 43210" className="glass-input pl-10 w-full" />
-                  </div>
+                  <InputWithIcon
+                    type="tel"
+                    icon={Phone}
+                    iconSize={15}
+                    value={customerPhone}
+                    onChange={handlePhoneChange}
+                    placeholder="9876543210"
+                    inputMode="numeric"
+                    maxLength={10}
+                    autoComplete="tel"
+                  />
+                  {customerPhone.length > 0 && customerPhone.length < 10 && (
+                    <p className="text-[11px] text-amber-400/90 mt-1">{customerPhone.length}/10 digits</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -400,7 +463,16 @@ export default function Billing() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Vehicle Number (Plate) *</label>
-                  <input type="text" required value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="e.g. CA-876-90" className="glass-input w-full font-mono uppercase tracking-wider font-bold" />
+                  <input
+                    type="text"
+                    required
+                    value={vehicleNumber}
+                    onChange={handleVehicleNumberChange}
+                    placeholder="e.g. CA87690"
+                    className="glass-input w-full font-mono uppercase tracking-wider font-bold"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Vehicle Model *</label>
@@ -480,7 +552,7 @@ export default function Billing() {
                             value={row.type}
                             onChange={(e) => updateServiceRow(index, 'type', e.target.value)}
                             placeholder="e.g. Engine Oil Change"
-                            className="w-full bg-transparent text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 rounded px-2 py-1 border border-transparent focus:border-indigo-500/30 transition-all"
+                            className="glass-input text-sm py-2 min-h-0"
                           />
                         </td>
                         <td className="py-2 px-4">
@@ -491,7 +563,7 @@ export default function Billing() {
                             value={row.amount}
                             onChange={(e) => updateServiceRow(index, 'amount', e.target.value)}
                             placeholder="0.00"
-                            className="w-full bg-transparent text-right text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 rounded px-2 py-1 border border-transparent focus:border-indigo-500/30 transition-all"
+                            className="glass-input text-sm text-right py-2 min-h-0"
                           />
                         </td>
                         <td className="py-2 px-3 text-center">
@@ -524,33 +596,31 @@ export default function Billing() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col">
                     <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Tax (Rs.)</label>
-                    <div className="relative">
-                      <Percent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={tax}
-                        onChange={(e) => setTax(e.target.value)}
-                        placeholder="0.00"
-                        className="glass-input pl-9 w-full text-rose-400"
-                      />
-                    </div>
+                    <InputWithIcon
+                      type="number"
+                      icon={Percent}
+                      iconSize={14}
+                      step="0.01"
+                      min="0"
+                      value={tax}
+                      onChange={(e) => setTax(e.target.value)}
+                      placeholder="0.00"
+                      className="text-rose-400"
+                    />
                   </div>
                   <div className="flex flex-col">
                     <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Discount (Rs.)</label>
-                    <div className="relative">
-                      <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={discount}
-                        onChange={(e) => setDiscount(e.target.value)}
-                        placeholder="0.00"
-                        className="glass-input pl-9 w-full text-emerald-400"
-                      />
-                    </div>
+                    <InputWithIcon
+                      type="number"
+                      icon={Tag}
+                      iconSize={14}
+                      step="0.01"
+                      min="0"
+                      value={discount}
+                      onChange={(e) => setDiscount(e.target.value)}
+                      placeholder="0.00"
+                      className="text-emerald-400"
+                    />
                   </div>
                 </div>
 
@@ -584,6 +654,7 @@ export default function Billing() {
             <div className="flex flex-wrap items-center justify-between gap-4 pt-2 pb-6">
               <button
                 type="button"
+                data-enter-submit
                 onClick={handleSaveBill}
                 className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
               >

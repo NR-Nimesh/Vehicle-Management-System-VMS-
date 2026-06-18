@@ -50,7 +50,52 @@
 }
 
 .glass-input {
-  @apply bg-slate-950/40 border border-slate-700/60 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/55 focus:border-indigo-500/55 transition-all text-slate-100 placeholder-slate-500;
+  @apply bg-slate-950/40 border border-slate-700/60 rounded-lg py-2.5 pl-3 pr-3 min-h-[42px] w-full focus:outline-none focus:ring-2 focus:ring-indigo-500/55 focus:border-indigo-500/55 transition-all text-slate-100 placeholder-slate-500;
+}
+
+/* Icon-adorned inputs — icons sit in gutters; text never runs underneath */
+.input-icon-wrap {
+  @apply relative w-full;
+}
+
+.input-icon-wrap .input-icon-left {
+  @apply pointer-events-none absolute inset-y-0 left-0 z-10 flex w-11 items-center justify-center text-slate-500;
+}
+
+.input-icon-wrap .input-icon-right {
+  @apply absolute inset-y-0 right-0 z-10 flex w-11 items-center justify-center;
+}
+
+.glass-input-icon-left {
+  padding-left: 2.75rem !important;
+}
+
+.glass-input-icon-right {
+  padding-right: 2.75rem !important;
+}
+
+/* Native date/time picker controls need extra right gutter */
+.glass-input-date {
+  padding-right: 2.75rem !important;
+}
+
+input[type="date"].glass-input::-webkit-calendar-picker-indicator,
+input[type="time"].glass-input::-webkit-calendar-picker-indicator {
+  @apply cursor-pointer opacity-70;
+  margin-right: 0.125rem;
+}
+
+/* Select dropdown chevron spacing */
+select.glass-input {
+  @apply pr-10 appearance-none cursor-pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+textarea.glass-input {
+  @apply min-h-0 py-2.5;
 }
 
 /* Hide default input file visual styling */

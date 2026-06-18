@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useBilling } from '../context/BillingContext';
 import { compressImage } from '../utils/imageCompressor';
+import useFormFieldNavigation from '../hooks/useFormFieldNavigation';
 import { Building2, Phone, Mail, MapPin, Percent, Upload, CheckCircle2 } from 'lucide-react';
 
 export default function BusinessProfile() {
   const { businessProfile, updateBusinessProfile } = useBilling();
+  const formRef = useRef(null);
+  useFormFieldNavigation(formRef);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -86,7 +89,7 @@ export default function BusinessProfile() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
           {/* Logo Upload Section */}
           <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-800">
             <div className="relative group">
@@ -139,7 +142,7 @@ export default function BusinessProfile() {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="e.g. Acme Auto Services"
-                className="glass-input"
+                className="glass-input w-full"
               />
             </div>
 
@@ -154,7 +157,7 @@ export default function BusinessProfile() {
                 value={formData.taxNumber}
                 onChange={handleChange}
                 placeholder="e.g. TAX-987654321"
-                className="glass-input"
+                className="glass-input w-full"
               />
             </div>
 
@@ -169,7 +172,7 @@ export default function BusinessProfile() {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="e.g. +1 (555) 019-2834"
-                className="glass-input"
+                className="glass-input w-full"
               />
             </div>
 
@@ -184,7 +187,7 @@ export default function BusinessProfile() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="e.g. info@acmeauto.com"
-                className="glass-input"
+                className="glass-input w-full"
               />
             </div>
 
@@ -199,7 +202,7 @@ export default function BusinessProfile() {
                 value={formData.address}
                 onChange={handleChange}
                 placeholder="e.g. 123 Gearbox Lane, Auto City, AC 94012"
-                className="glass-input resize-none"
+                className="glass-input resize-none w-full"
               />
             </div>
           </div>
