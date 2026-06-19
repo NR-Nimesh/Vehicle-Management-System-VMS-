@@ -127,11 +127,8 @@ export const generateInvoicePDF = (bill) => {
   doc.setTextColor(255, 255, 255);
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(9);
-  doc.text('Service Type / Description', marginX + 5, currentY + 5.5);
-  doc.text('Amount', 115, currentY + 5.5, { align: 'right' });
-  doc.text('Tax', 140, currentY + 5.5, { align: 'right' });
-  doc.text('Discount', 165, currentY + 5.5, { align: 'right' });
-  doc.text('Total', 190, currentY + 5.5, { align: 'right' });
+  doc.text('Service Type', marginX + 5, currentY + 5.5);
+  doc.text('Amount', 190, currentY + 5.5, { align: 'right' });
   
   currentY += 8;
 
@@ -139,20 +136,32 @@ export const generateInvoicePDF = (bill) => {
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(220, 225, 230);
   doc.setLineWidth(0.2);
-  doc.rect(marginX, currentY, 180, 12, 'FD');
+
+  const services = (bill.services && Array.isArray(bill.services) && bill.services.length > 0)
+    ? bill.services
+    : [{ type: bill.serviceType || 'General Service', amount: bill.amount || 0 }];
+
+  const rowHeight = 10;
+  doc.rect(marginX, currentY, 180, services.length * rowHeight, 'FD');
 
   doc.setTextColor(...darkColor);
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(9.5);
-  doc.text(bill.serviceType || 'General Service', marginX + 5, currentY + 7.5);
-  doc.text(`$${Number(bill.amount).toFixed(2)}`, 115, currentY + 7.5, { align: 'right' });
-  doc.text(`+$${Number(bill.tax).toFixed(2)}`, 140, currentY + 7.5, { align: 'right' });
-  doc.text(`-$${Number(bill.discount).toFixed(2)}`, 165, currentY + 7.5, { align: 'right' });
-  
-  doc.setFont('Helvetica', 'bold');
-  doc.text(`$${Number(bill.total).toFixed(2)}`, 190, currentY + 7.5, { align: 'right' });
 
-  currentY += 22;
+  services.forEach((service, index) => {
+    const yPos = currentY + (index * rowHeight) + 6.5;
+    doc.text(service.type || 'General Service', marginX + 5, yPos);
+    doc.text(`$${Number(service.amount || 0).toFixed(2)}`, 190, yPos, { align: 'right' });
+    
+    // Add horizontal line between rows if not last
+    if (index < services.length - 1) {
+      doc.setDrawColor(220, 225, 230);
+      doc.setLineWidth(0.2);
+      doc.line(marginX, currentY + ((index + 1) * rowHeight), 195, currentY + ((index + 1) * rowHeight));
+    }
+  });
+
+  currentY += (services.length * rowHeight) + 10;
 
   // Breakdown Summary Table
   const labelX = 140;

@@ -76,6 +76,20 @@ export default function DataTable({
                     >
                       <Eye size={15} />
                     </button>
+                    <button
+                      onClick={() => onEdit(bill)}
+                      className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/10 transition-colors border border-transparent hover:border-indigo-500/20"
+                      title="Edit Bill"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      onClick={() => onDelete(bill.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors border border-transparent hover:border-rose-500/20"
+                      title="Delete Bill"
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 </td>
               </tr>

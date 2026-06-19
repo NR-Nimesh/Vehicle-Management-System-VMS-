@@ -191,6 +191,39 @@ export default function Billing() {
     }
   };
 
+  // ── Keyboard Navigation for Services ──
+  const handleServiceTypeKeyDown = (e, index) => {
+    if (e.key === 'Escape') {
+      e.target.blur();
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const amountInput = document.getElementById(`service-amount-${index}`);
+      if (amountInput) amountInput.focus();
+    }
+  };
+
+  const handleServiceAmountKeyDown = (e, index) => {
+    if (e.key === 'Escape') {
+      e.target.blur();
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (index === services.length - 1 && services.length < MAX_SERVICES) {
+        addServiceRow();
+        setTimeout(() => {
+          const nextTypeInput = document.getElementById(`service-type-${index + 1}`);
+          if (nextTypeInput) nextTypeInput.focus();
+        }, 0);
+      } else if (index < services.length - 1) {
+        const nextTypeInput = document.getElementById(`service-type-${index + 1}`);
+        if (nextTypeInput) nextTypeInput.focus();
+      }
+    }
+  };
+
   // ── Calculations ──────────────────────────────────────────────────────────
   const subtotal = services.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
   const taxVal = parseFloat(tax) || 0;
@@ -276,6 +309,17 @@ export default function Billing() {
     }
   };
 
+  const handleClearForm = () => {
+    if (window.confirm("Are you sure you want to clear all entered data? This action cannot be undone.")) {
+      clearNewBillFields();
+      setDate(new Date().toISOString().split('T')[0]);
+      if (!currentEditBill) {
+        setInvoiceNumber(getNextInvoiceNumber());
+      }
+      setNotification({ type: 'success', message: 'Form cleared successfully.' });
+    }
+  };
+
   const clearNewBillFields = () => {
     localStorage.removeItem(DRAFT_KEY);
     setVehiclePhoto('');
@@ -335,32 +379,31 @@ export default function Billing() {
       )}
 
       {/* Page Content */}
-      <div className="max-w-7xl mx-auto py-6 px-4">
+      <div className="max-w-7xl mx-auto py-6 px-4 flex flex-col items-center">
 
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-slate-100 to-slate-400 bg-clip-text text-transparent">
-              {currentEditBill ? 'Edit Invoice Workspace' : 'Invoice Workspace'}
-            </h1>
-            <p className="text-slate-400 text-sm mt-1">
-              {currentEditBill
-                ? `Modify invoice details for ${currentEditBill.invoiceNumber}`
-                : 'Create, preview, print, and export vehicle service invoices.'}
-            </p>
+        <div className="max-w-3xl w-full">
+          {/* Page Header */}
+          <div className="flex flex-col items-center justify-center gap-4 mb-8 text-center">
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-slate-100 to-slate-400 bg-clip-text text-transparent text-center">
+                {currentEditBill ? 'Edit Invoice Workspace' : 'Invoice Workspace'}
+              </h1>
+              <p className="text-slate-400 text-sm mt-1 text-center">
+                {currentEditBill
+                  ? `Modify invoice details for ${currentEditBill.invoiceNumber}`
+                  : 'Create, preview, print, and export vehicle service invoices.'}
+              </p>
+            </div>
+            {currentEditBill && (
+              <button
+                onClick={handleBackToHistory}
+                className="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-700/80 hover:border-slate-600 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800/40 text-slate-300"
+              >
+                <ArrowLeft size={16} />
+                Back to History
+              </button>
+            )}
           </div>
-          {currentEditBill && (
-            <button
-              onClick={handleBackToHistory}
-              className="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-700/80 hover:border-slate-600 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800/40 text-slate-300"
-            >
-              <ArrowLeft size={16} />
-              Back to History
-            </button>
-          )}
-        </div>
-
-        <div className="max-w-3xl">
           <div ref={formRef} className="space-y-6">
 
             {/* Inline notification banner */}
@@ -548,20 +591,24 @@ export default function Billing() {
                         <td className="py-2 px-4 text-slate-500 text-xs font-mono">{index + 1}</td>
                         <td className="py-2 px-4">
                           <input
+                            id={`service-type-${index}`}
                             type="text"
                             value={row.type}
                             onChange={(e) => updateServiceRow(index, 'type', e.target.value)}
+                            onKeyDown={(e) => handleServiceTypeKeyDown(e, index)}
                             placeholder="e.g. Engine Oil Change"
                             className="glass-input text-sm py-2 min-h-0"
                           />
                         </td>
                         <td className="py-2 px-4">
                           <input
+                            id={`service-amount-${index}`}
                             type="number"
                             step="0.01"
                             min="0"
                             value={row.amount}
                             onChange={(e) => updateServiceRow(index, 'amount', e.target.value)}
+                            onKeyDown={(e) => handleServiceAmountKeyDown(e, index)}
                             placeholder="0.00"
                             className="glass-input text-sm text-right py-2 min-h-0"
                           />
@@ -652,15 +699,25 @@ export default function Billing() {
 
             {/* ── Action Buttons ── */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-2 pb-6">
-              <button
-                type="button"
-                data-enter-submit
-                onClick={handleSaveBill}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
-              >
-                <CheckCircle2 size={16} />
-                Save Bill
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  data-enter-submit
+                  onClick={handleSaveBill}
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
+                >
+                  <CheckCircle2 size={16} />
+                  Save Bill
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearForm}
+                  className="px-4 py-2.5 bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 font-semibold rounded-xl text-sm transition-all flex items-center gap-2 border border-rose-500/20"
+                >
+                  <Trash2 size={16} />
+                  Clear
+                </button>
+              </div>
 
               <div className="flex items-center gap-3">
                 <button

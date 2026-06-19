@@ -26,31 +26,41 @@ export const BillingProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const mapBillData = (bill) => ({
-    id: bill.id,
-    invoiceNumber: bill.invoice_number || bill.invoiceNumber,
-    date: bill.date ? (typeof bill.date === 'string' ? bill.date.split('T')[0] : new Date(bill.date).toISOString().split('T')[0]) : null,
-    vehiclePhoto: bill.vehicle_photo || bill.vehiclePhoto,
-    vehicleNumber: bill.vehicle_number || bill.vehicleNumber,
-    vehicleModel: bill.vehicle_model || bill.vehicleModel,
-    vehicleDescription: bill.vehicle_description || bill.vehicleDescription,
-    customerName: bill.customer_name || bill.customerName,
-    customerEmail: bill.customer_email || bill.customerEmail,
-    customerPhone: bill.customer_phone || bill.customerPhone,
-    businessName: bill.business_name || bill.businessName,
-    businessPhone: bill.business_phone || bill.businessPhone,
-    businessEmail: bill.business_email || bill.businessEmail,
-    businessLogo: bill.business_logo || bill.businessLogo,
-    businessAddress: bill.business_address || bill.businessAddress,
-    businessTaxNumber: bill.business_tax_number || bill.businessTaxNumber,
-    serviceType: bill.service_type || bill.serviceType,
-    amount: bill.amount,
-    tax: bill.tax,
-    discount: bill.discount,
-    total: bill.total,
-    createdAt: bill.created_at,
-    updatedAt: bill.updated_at
-  });
+  const mapBillData = (bill) => {
+    // Parse services — may come as a JSON string from MySQL or already as an array
+    let services = bill.services || bill.service_list || [];
+    if (typeof services === 'string') {
+      try { services = JSON.parse(services); } catch { services = []; }
+    }
+    if (!Array.isArray(services)) services = [];
+
+    return {
+      id: bill.id,
+      invoiceNumber: bill.invoice_number || bill.invoiceNumber,
+      date: bill.date ? (typeof bill.date === 'string' ? bill.date.split('T')[0] : new Date(bill.date).toISOString().split('T')[0]) : null,
+      vehiclePhoto: bill.vehicle_photo || bill.vehiclePhoto,
+      vehicleNumber: bill.vehicle_number || bill.vehicleNumber,
+      vehicleModel: bill.vehicle_model || bill.vehicleModel,
+      vehicleDescription: bill.vehicle_description || bill.vehicleDescription,
+      customerName: bill.customer_name || bill.customerName,
+      customerEmail: bill.customer_email || bill.customerEmail,
+      customerPhone: bill.customer_phone || bill.customerPhone,
+      businessName: bill.business_name || bill.businessName,
+      businessPhone: bill.business_phone || bill.businessPhone,
+      businessEmail: bill.business_email || bill.businessEmail,
+      businessLogo: bill.business_logo || bill.businessLogo,
+      businessAddress: bill.business_address || bill.businessAddress,
+      businessTaxNumber: bill.business_tax_number || bill.businessTaxNumber,
+      serviceType: bill.service_type || bill.serviceType,
+      services,
+      amount: bill.amount,
+      tax: bill.tax,
+      discount: bill.discount,
+      total: bill.total,
+      createdAt: bill.created_at,
+      updatedAt: bill.updated_at
+    };
+  };
 
   const fetchBills = async () => {
     try {

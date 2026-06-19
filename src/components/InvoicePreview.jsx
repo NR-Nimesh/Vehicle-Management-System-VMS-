@@ -75,23 +75,28 @@ const InvoicePreview = forwardRef(({ bill }, ref) => {
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-slate-300 text-slate-400 font-bold uppercase">
-              <th className="py-3 px-2 w-7/12">Service Description</th>
+              <th className="py-3 px-2 w-3/4">Service Type</th>
               <th className="py-3 px-2 text-right">Amount</th>
-              <th className="py-3 px-2 text-right">Tax</th>
-              <th className="py-3 px-2 text-right">Discount</th>
-              <th className="py-3 px-2 text-right">Total</th>
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-slate-100 text-slate-700">
-              <td className="py-4 px-2 font-medium text-slate-800">
-                {bill.serviceType || 'General Maintenance Service'}
-              </td>
-              <td className="py-4 px-2 text-right">${Number(bill.amount || 0).toFixed(2)}</td>
-              <td className="py-4 px-2 text-right text-rose-600">+${Number(bill.tax || 0).toFixed(2)}</td>
-              <td className="py-4 px-2 text-right text-emerald-600">-${Number(bill.discount || 0).toFixed(2)}</td>
-              <td className="py-4 px-2 text-right font-bold text-slate-900">${Number(bill.total || 0).toFixed(2)}</td>
-            </tr>
+            {bill.services && Array.isArray(bill.services) && bill.services.length > 0 ? (
+              bill.services.map((service, index) => (
+                <tr key={index} className="border-b border-slate-100 text-slate-700">
+                  <td className="py-4 px-2 font-medium text-slate-800">
+                    {service.type || 'General Maintenance Service'}
+                  </td>
+                  <td className="py-4 px-2 text-right">${Number(service.amount || 0).toFixed(2)}</td>
+                </tr>
+              ))
+            ) : (
+              <tr className="border-b border-slate-100 text-slate-700">
+                <td className="py-4 px-2 font-medium text-slate-800">
+                  {bill.serviceType || 'General Maintenance Service'}
+                </td>
+                <td className="py-4 px-2 text-right">${Number(bill.amount || 0).toFixed(2)}</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

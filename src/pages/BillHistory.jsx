@@ -138,12 +138,22 @@ export default function BillHistory() {
                 <Info size={18} />
                 <h3 className="text-lg font-bold text-slate-200">Billing Information</h3>
               </div>
-              <button 
-                onClick={() => setSelectedDetailBill(null)}
-                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleDownloadInvoice(selectedDetailBill)}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-all shadow-lg shadow-indigo-600/20"
+                  title="Download PDF"
+                >
+                  <Download size={13} />
+                  Download PDF
+                </button>
+                <button 
+                  onClick={() => setSelectedDetailBill(null)}
+                  className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Modal Scroll Content */}

@@ -19,6 +19,16 @@ INSERT INTO vehicles (vin, make, model, year, color, mileage, owner) VALUES
 ('1HGBH41JXMN109186','Honda','Civic',2018,'Blue',45200,'Alice'),
 ('WP0AA2A97EL012345','Porsche','911',2020,'Red',12000,'Bob');
 
+-- Categories table
+CREATE TABLE IF NOT EXISTS categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO categories (name) VALUES 
+('Lubricants'), ('Brakes'), ('Filters'), ('Electrical'), ('Accessories'), ('Other');
+
 -- Items table for inventory (migrating from frontend localStorage)
 CREATE TABLE IF NOT EXISTS items (
   id INT AUTO_INCREMENT PRIMARY KEY,
