@@ -155,6 +155,22 @@ router.post('/', async (req, res, next) => {
       ]
     );
 
+    // Reduce stock for items included in the bill
+    if (services && Array.isArray(services)) {
+      for (const service of services) {
+        if (service.itemId && service.quantity) {
+          try {
+            await pool.query(
+              'UPDATE items SET stock = stock - ? WHERE id = ? AND stock >= ?',
+              [service.quantity, service.itemId, service.quantity]
+            );
+          } catch (stockErr) {
+            console.error('Error reducing stock for item:', service.itemId, stockErr);
+          }
+        }
+      }
+    }
+
     const [rows] = await pool.query('SELECT * FROM bills WHERE id = ?', [result.insertId]);
     const saved = rows[0];
     res.status(201).json({

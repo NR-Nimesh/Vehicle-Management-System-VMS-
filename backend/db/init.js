@@ -87,7 +87,13 @@ const migrations = [
   // Add 'services' column to bills if it doesn't already exist
   `ALTER TABLE bills ADD COLUMN services JSON`,
   `ALTER TABLE bills ADD COLUMN paid_amount DECIMAL(10,2) DEFAULT 0.00`,
-  `ALTER TABLE bills ADD COLUMN pending_amount DECIMAL(10,2) DEFAULT 0.00`
+  `ALTER TABLE bills ADD COLUMN pending_amount DECIMAL(10,2) DEFAULT 0.00`,
+  `ALTER TABLE bills ADD COLUMN business_name VARCHAR(255)`,
+  `ALTER TABLE bills ADD COLUMN business_phone VARCHAR(64)`,
+  `ALTER TABLE bills ADD COLUMN business_email VARCHAR(255)`,
+  `ALTER TABLE bills ADD COLUMN business_logo LONGTEXT`,
+  `ALTER TABLE bills ADD COLUMN business_address TEXT`,
+  `ALTER TABLE bills ADD COLUMN business_tax_number VARCHAR(128)`
 ];
 
 async function initializeDatabase() {

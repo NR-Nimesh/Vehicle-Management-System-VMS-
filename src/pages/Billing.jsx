@@ -16,8 +16,9 @@ import {
 import {
   Calendar, Hash, User, Car, Phone, Mail,
   DollarSign, Percent, Tag, Download,
-  Printer, ArrowLeft, Upload, CheckCircle2, AlertCircle, Plus, Trash2
+  Printer, ArrowLeft, Upload, CheckCircle2, AlertCircle, Plus, Trash2, Search, Filter, Package
 } from 'lucide-react';
+import { apiRequest } from '../utils/api';
 
 const MAX_SERVICES = 20;
 const DEFAULT_SERVICE = { type: '', amount: '' };
@@ -67,6 +68,37 @@ export default function Billing() {
   // UI states
   const [notification, setNotification] = useState({ type: '', message: '' });
   const [modal, setModal] = useState({ show: false, message: '', type: '' });
+
+  // ── Item Search ───────────────────────────────────────────────────────────
+  const [items, setItems] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [catsRes, itemsRes] = await Promise.all([
+          apiRequest('/categories'),
+          apiRequest('/items')
+        ]);
+        setCategories(catsRes);
+        setItems(itemsRes);
+      } catch (error) {
+        console.error('Error fetching data for item search:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const filteredItems = items.filter(item => {
+    const searchLower = itemSearchQuery.toLowerCase();
+    const matchesSearch = (item.name && item.name.toLowerCase().includes(searchLower)) || 
+                          (item.code && item.code.toLowerCase().includes(searchLower)) ||
+                          (item.category && item.category.toLowerCase().includes(searchLower));
+    const matchesCategory = selectedCategory ? item.category === selectedCategory : true;
+    return matchesSearch && matchesCategory;
+  });
 
   // ── Draft persistence ─────────────────────────────────────────────────────
   const DRAFT_KEY = 'billing_draft';
@@ -173,6 +205,51 @@ export default function Billing() {
     setServices(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row));
   };
 
+  const handleAddItemToBill = (item) => {
+    if (item.stock <= 0) {
+      showNotification('error', 'Item out of stock.');
+      return;
+    }
+    
+    const newItemService = {
+      baseName: item.name,
+      type: item.name,
+      amount: parseFloat(item.price).toFixed(2),
+      itemId: item.id,
+      quantity: 1,
+      price: parseFloat(item.price),
+      maxStock: item.stock,
+      isItem: true
+    };
+
+    const emptyIndex = services.findIndex(s => !s.type && !s.amount);
+    if (emptyIndex !== -1) {
+      const newServices = [...services];
+      newServices[emptyIndex] = newItemService;
+      setServices(newServices);
+    } else if (services.length < MAX_SERVICES) {
+      setServices(prev => [...prev, newItemService]);
+    } else {
+      showNotification('error', 'Maximum service rows reached.');
+    }
+  };
+
+  const handleItemQuantityChange = (index, newQty) => {
+    setServices(prev => prev.map((row, i) => {
+      if (i === index && row.isItem) {
+        let qty = parseInt(newQty) || 1;
+        if (qty < 1) qty = 1;
+        if (qty > row.maxStock) qty = row.maxStock;
+        return {
+          ...row,
+          quantity: qty,
+          amount: (row.price * qty).toFixed(2)
+        };
+      }
+      return row;
+    }));
+  };
+
   const handlePhoneChange = (e) => {
     setCustomerPhone(sanitizePhone(e.target.value));
   };
@@ -252,32 +329,44 @@ export default function Billing() {
   };
 
   // ── Build bill data object ────────────────────────────────────────────────
-  const getCurrentBillData = () => ({
-    date,
-    invoiceNumber,
-    vehiclePhoto,
-    vehicleNumber: sanitizeVehicleNumber(vehicleNumber),
-    vehicleModel,
-    vehicleDescription,
-    customerName,
-    customerEmail: normalizeEmail(customerEmail),
-    customerPhone: sanitizePhone(customerPhone),
-    businessName,
-    businessPhone,
-    businessEmail,
-    businessLogo: businessProfile?.logo || '',
-    businessAddress: businessProfile?.address || '',
-    businessTaxNumber: businessProfile?.taxNumber || '',
-    services,
-    // Legacy fields for backward compatibility with PDF / print templates
-    serviceType: services.map(s => s.type).filter(Boolean).join(', '),
-    amount: subtotal,
-    tax: taxVal,
-    discount: discountVal,
-    total: finalTotal,
-    paidAmount: paidVal,
-    pendingAmount: pendingVal
-  });
+  const getCurrentBillData = () => {
+    const finalServices = services.map(s => {
+      if (s.isItem) {
+        return {
+          ...s,
+          type: s.quantity > 1 ? `${s.baseName || s.type} (Qty: ${s.quantity})` : (s.baseName || s.type)
+        };
+      }
+      return s;
+    });
+
+    return {
+      date,
+      invoiceNumber,
+      vehiclePhoto,
+      vehicleNumber: sanitizeVehicleNumber(vehicleNumber),
+      vehicleModel,
+      vehicleDescription,
+      customerName,
+      customerEmail: normalizeEmail(customerEmail),
+      customerPhone: sanitizePhone(customerPhone),
+      businessName,
+      businessPhone,
+      businessEmail,
+      businessLogo: businessProfile?.logo || '',
+      businessAddress: businessProfile?.address || '',
+      businessTaxNumber: businessProfile?.taxNumber || '',
+      services: finalServices,
+      // Legacy fields for backward compatibility with PDF / print templates
+      serviceType: finalServices.map(s => s.type).filter(Boolean).join(', '),
+      amount: subtotal,
+      tax: taxVal,
+      discount: discountVal,
+      total: finalTotal,
+      paidAmount: paidVal,
+      pendingAmount: pendingVal
+    };
+  };
 
   // ── Save Bill ─────────────────────────────────────────────────────────────
   const handleSaveBill = async () => {
@@ -598,28 +687,62 @@ export default function Billing() {
                       <tr key={index} className="group hover:bg-slate-800/20 transition-colors">
                         <td className="py-2 px-4 text-slate-500 text-xs font-mono">{index + 1}</td>
                         <td className="py-2 px-4">
-                          <input
-                            id={`service-type-${index}`}
-                            type="text"
-                            value={row.type}
-                            onChange={(e) => updateServiceRow(index, 'type', e.target.value)}
-                            onKeyDown={(e) => handleServiceTypeKeyDown(e, index)}
-                            placeholder="e.g. Engine Oil Change"
-                            className="glass-input text-sm py-2 min-h-0"
-                          />
+                          {row.isItem ? (
+                            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2">
+                              <span className="text-sm font-medium text-slate-200 truncate" title={row.type}>{row.type}</span>
+                              <div className="flex items-center bg-slate-900 border border-slate-700/60 rounded overflow-hidden shrink-0 h-6 shadow-sm">
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleItemQuantityChange(index, row.quantity - 1)}
+                                  className="px-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors h-full flex items-center justify-center font-medium leading-none"
+                                >-</button>
+                                <input 
+                                  type="number" 
+                                  value={row.quantity} 
+                                  onChange={(e) => handleItemQuantityChange(index, e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                                  className="w-7 text-center bg-transparent text-[11px] font-semibold outline-none text-slate-200 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  min="1"
+                                  max={row.maxStock}
+                                  style={{ MozAppearance: 'textfield' }}
+                                />
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleItemQuantityChange(index, row.quantity + 1)}
+                                  className="px-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors h-full flex items-center justify-center font-medium leading-none"
+                                >+</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <input
+                              id={`service-type-${index}`}
+                              type="text"
+                              value={row.type}
+                              onChange={(e) => updateServiceRow(index, 'type', e.target.value)}
+                              onKeyDown={(e) => handleServiceTypeKeyDown(e, index)}
+                              placeholder="e.g. Engine Oil Change"
+                              className="glass-input text-sm py-2 min-h-0"
+                            />
+                          )}
                         </td>
                         <td className="py-2 px-4">
-                          <input
-                            id={`service-amount-${index}`}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={row.amount}
-                            onChange={(e) => updateServiceRow(index, 'amount', e.target.value)}
-                            onKeyDown={(e) => handleServiceAmountKeyDown(e, index)}
-                            placeholder="0.00"
-                            className="glass-input text-sm text-right py-2 min-h-0"
-                          />
+                          {row.isItem ? (
+                            <div className="text-right text-sm font-semibold text-indigo-300 py-2">
+                              {parseFloat(row.amount || 0).toFixed(2)}
+                            </div>
+                          ) : (
+                            <input
+                              id={`service-amount-${index}`}
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={row.amount}
+                              onChange={(e) => updateServiceRow(index, 'amount', e.target.value)}
+                              onKeyDown={(e) => handleServiceAmountKeyDown(e, index)}
+                              placeholder="0.00"
+                              className="glass-input text-sm text-right py-2 min-h-0"
+                            />
+                          )}
                         </td>
                         <td className="py-2 px-3 text-center">
                           {services.length > 1 && (
@@ -645,6 +768,85 @@ export default function Billing() {
                 <div className="flex items-center justify-between px-1">
                   <span className="text-sm text-slate-400">Subtotal</span>
                   <span className="text-sm font-semibold text-slate-200">Rs. {subtotal.toFixed(2)}</span>
+                </div>
+
+                {/* ── Item Search Section ── */}
+                <div className="bg-slate-900/50 border border-slate-700/60 rounded-xl p-4 my-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package size={16} className="text-indigo-400" />
+                    <h3 className="text-sm font-bold text-slate-200">Item Search</h3>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                    <div className="flex-1 input-icon-wrap">
+                      <div className="input-icon-left">
+                        <Search size={14} />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search by name, code, or category..."
+                        value={itemSearchQuery}
+                        onChange={(e) => setItemSearchQuery(e.target.value)}
+                        className="glass-input glass-input-icon-left w-full text-sm"
+                      />
+                    </div>
+                    <div className="sm:w-48 input-icon-wrap">
+                      <div className="input-icon-left">
+                        <Filter size={14} />
+                      </div>
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="glass-input glass-input-icon-left w-full text-sm"
+                      >
+                        <option value="">All Categories</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto border border-slate-700/50 rounded-lg bg-slate-950/30 custom-scrollbar">
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 bg-slate-800 text-slate-400">
+                        <tr>
+                          <th className="text-left py-2 px-3 font-semibold">Code</th>
+                          <th className="text-left py-2 px-3 font-semibold">Name</th>
+                          <th className="text-right py-2 px-3 font-semibold">Price (Rs.)</th>
+                          <th className="text-right py-2 px-3 font-semibold">Stock</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/50">
+                        {filteredItems.length > 0 ? (
+                          filteredItems.map(item => (
+                            <tr key={item.id} onClick={() => handleAddItemToBill(item)} className="hover:bg-slate-800/20 transition-colors cursor-pointer" title="Click to add to bill">
+                              <td className="py-2 px-3 text-slate-400 font-mono">{item.code || '-'}</td>
+                              <td className="py-2 px-3 text-slate-300">{item.name}</td>
+                              <td className="py-2 px-3 text-right text-indigo-300 font-medium">{parseFloat(item.price || 0).toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                  item.stock > 10 ? 'bg-emerald-500/10 text-emerald-400' :
+                                  item.stock > 0 ? 'bg-amber-500/10 text-amber-400' :
+                                  'bg-rose-500/10 text-rose-400'
+                                }`}>
+                                  {item.stock || 0}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="4" className="py-4 text-center text-slate-500">No items found.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <div className="mt-2 text-xs text-slate-400 text-right">
+                    Showing <span className="font-semibold text-slate-300">{filteredItems.length}</span> matching items
+                  </div>
                 </div>
 
                 {/* Tax & Discount inputs */}
