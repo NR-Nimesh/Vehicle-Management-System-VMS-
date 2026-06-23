@@ -62,6 +62,7 @@ export default function Billing() {
   const [services, setServices] = useState([{ ...DEFAULT_SERVICE }]);
   const [tax, setTax] = useState('');
   const [discount, setDiscount] = useState('');
+  const [paidAmount, setPaidAmount] = useState('');
 
   // UI states
   const [notification, setNotification] = useState({ type: '', message: '' });
@@ -78,12 +79,12 @@ export default function Billing() {
     const draft = {
       date, invoiceNumber, vehiclePhoto, vehicleNumber, vehicleModel, vehicleDescription,
       customerName, customerEmail, customerPhone, businessName, businessPhone, businessEmail,
-      services, tax, discount
+      services, tax, discount, paidAmount
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
   }, [date, invoiceNumber, vehiclePhoto, vehicleNumber, vehicleModel, vehicleDescription,
       customerName, customerEmail, customerPhone, businessName, businessPhone, businessEmail,
-      services, tax, discount, currentEditBill]);
+      services, tax, discount, paidAmount, currentEditBill]);
 
   // Load data once on mount
   useEffect(() => {
@@ -113,6 +114,7 @@ export default function Billing() {
       }
       setTax(currentEditBill.tax || '');
       setDiscount(currentEditBill.discount || '');
+      setPaidAmount(currentEditBill.paidAmount || '');
     } else {
       const savedDraft = localStorage.getItem(DRAFT_KEY);
       if (savedDraft) {
@@ -135,6 +137,7 @@ export default function Billing() {
             : [{ ...DEFAULT_SERVICE }]);
           setTax(draft.tax || '');
           setDiscount(draft.discount || '');
+          setPaidAmount(draft.paidAmount || '');
         } catch {
           localStorage.removeItem(DRAFT_KEY);
           setInvoiceNumber(getNextInvoiceNumber());
@@ -229,6 +232,8 @@ export default function Billing() {
   const taxVal = parseFloat(tax) || 0;
   const discountVal = parseFloat(discount) || 0;
   const finalTotal = subtotal + taxVal - discountVal;
+  const paidVal = parseFloat(paidAmount) || 0;
+  const pendingVal = finalTotal - paidVal;
 
   // ── Photo upload ──────────────────────────────────────────────────────────
   const handlePhotoUpload = async (e) => {
@@ -269,7 +274,9 @@ export default function Billing() {
     amount: subtotal,
     tax: taxVal,
     discount: discountVal,
-    total: finalTotal
+    total: finalTotal,
+    paidAmount: paidVal,
+    pendingAmount: pendingVal
   });
 
   // ── Save Bill ─────────────────────────────────────────────────────────────
@@ -332,6 +339,7 @@ export default function Billing() {
     setServices([{ ...DEFAULT_SERVICE }]);
     setTax('');
     setDiscount('');
+    setPaidAmount('');
   };
 
   const showNotification = (type, message) => {
@@ -340,7 +348,7 @@ export default function Billing() {
   };
 
   const generatePDF = () => {
-    generateInvoicePDF(getCurrentBillData());
+    generateInvoicePDF(getCurrentBillData(), businessProfile);
     if (!currentEditBill) localStorage.removeItem(DRAFT_KEY);
   };
 
@@ -669,6 +677,20 @@ export default function Billing() {
                       className="text-emerald-400"
                     />
                   </div>
+                  <div className="flex flex-col col-span-2">
+                    <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Paid Amount (Rs.)</label>
+                    <InputWithIcon
+                      type="number"
+                      icon={DollarSign}
+                      iconSize={14}
+                      step="0.01"
+                      min="0"
+                      value={paidAmount}
+                      onChange={(e) => setPaidAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="text-indigo-400"
+                    />
+                  </div>
                 </div>
 
                 {/* Formula breakdown */}
@@ -690,8 +712,18 @@ export default function Billing() {
                     </div>
                   )}
                   <div className="border-t border-slate-700/50 pt-2 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-slate-300">Final Total</span>
+                    <span className="text-sm font-semibold text-slate-300">Total</span>
                     <span className="text-2xl font-extrabold text-indigo-400">Rs. {finalTotal.toFixed(2)}</span>
+                  </div>
+                  {paidVal > 0 && (
+                    <div className="flex justify-between text-xs text-indigo-300/80">
+                      <span>− Paid Amount</span>
+                      <span>Rs. {paidVal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-slate-700/50 pt-2 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-slate-300">Pending Amount</span>
+                    <span className={`text-lg font-bold ${pendingVal > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>Rs. {pendingVal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

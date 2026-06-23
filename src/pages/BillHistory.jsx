@@ -13,7 +13,7 @@ import {
 
 export default function BillHistory() {
   const navigate = useNavigate();
-  const { bills, deleteBill, setCurrentEditBill } = useBilling();
+  const { bills, deleteBill, setCurrentEditBill, businessProfile } = useBilling();
   
   // States
   const [search, setSearch] = useState('');
@@ -30,11 +30,16 @@ export default function BillHistory() {
   // 1. Search Filter
   const filteredBills = bills.filter(bill => {
     const query = search.toLowerCase();
+    const isPending = Number(bill.pendingAmount || 0) > 0;
+    const status = isPending ? 'pending' : 'paid';
+
     return (
       bill.invoiceNumber?.toLowerCase().includes(query) ||
       bill.vehicleNumber?.toLowerCase().includes(query) ||
       bill.vehicleModel?.toLowerCase().includes(query) ||
-      bill.customerName?.toLowerCase().includes(query)
+      bill.customerName?.toLowerCase().includes(query) ||
+      bill.date?.toLowerCase().includes(query) ||
+      status.includes(query)
     );
   });
 
@@ -70,7 +75,7 @@ export default function BillHistory() {
   };
 
   const handleDownloadInvoice = (bill) => {
-    generateInvoicePDF(bill);
+    generateInvoicePDF(bill, businessProfile);
   };
 
   const toggleSortOrder = () => {
@@ -95,7 +100,7 @@ export default function BillHistory() {
           <SearchBar 
             value={search} 
             onChange={setSearch} 
-            placeholder="Search by Invoice No, Customer Name, Vehicle Number, or Model..." 
+            placeholder="Search by Date, Status (Pending), Invoice No, Customer, Vehicle..." 
           />
         </div>
         <div className="flex shrink-0 w-full md:w-auto items-center gap-3">
@@ -202,11 +207,46 @@ export default function BillHistory() {
                   </div>
                 </div>
 
+                {/* Financial Summary */}
+                <div className="md:col-span-2 space-y-4">
+                  <div className="border border-slate-800 rounded-xl p-4 bg-slate-950/10">
+                    <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center gap-1">
+                      <CreditCard size={13} /> Payment Summary
+                    </h4>
+                    <div className="flex flex-wrap gap-6 text-sm">
+                      <div className="space-y-1">
+                        <p className="text-slate-400 text-xs">Total Amount</p>
+                        <p className="font-bold text-slate-200">Rs. {Number(selectedDetailBill.total || 0).toFixed(2)}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-slate-400 text-xs">Paid Amount</p>
+                        <p className="font-bold text-indigo-400">Rs. {Number(selectedDetailBill.paidAmount || 0).toFixed(2)}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-slate-400 text-xs">Pending Amount</p>
+                        <p className={`font-bold ${Number(selectedDetailBill.pendingAmount || 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          Rs. {Number(selectedDetailBill.pendingAmount || 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-slate-400 text-xs">Status</p>
+                        <p>
+                          {Number(selectedDetailBill.pendingAmount || 0) <= 0 ? (
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Paid</span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">Pending</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
               {/* Embedded Invoice Receipt */}
               <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950 p-4">
-                <InvoicePreview bill={selectedDetailBill} />
+                <InvoicePreview bill={selectedDetailBill} businessProfile={businessProfile} />
               </div>
             </div>
 
@@ -269,6 +309,7 @@ export default function BillHistory() {
               <InvoicePreview 
                 ref={printModalRef} 
                 bill={selectedPreviewBill} 
+                businessProfile={businessProfile}
               />
             </div>
           </div>

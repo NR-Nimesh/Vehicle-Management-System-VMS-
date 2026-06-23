@@ -95,7 +95,7 @@ export default function Home() {
           </div>
           <div>
             <span className="text-[10px] text-slate-500 block font-bold uppercase tracking-wider">Total Sales Revenue</span>
-            <span className="text-xl font-extrabold text-slate-150">${stats.totalSales.toFixed(2)}</span>
+            <span className="text-xl font-extrabold text-slate-150">Rs. {stats.totalSales.toFixed(2)}</span>
           </div>
         </div>
 

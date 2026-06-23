@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, FileText, History, Package, Briefcase, Menu, X, Car } from 'lucide-react';
+import { useBilling } from '../context/BillingContext';
 
 export default function Navbar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const { businessProfile } = useBilling();
 
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
@@ -30,7 +32,7 @@ export default function Navbar() {
               <Car size={24} className="text-indigo-400" />
             </div>
             <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              AutoDrive VMS
+              {businessProfile?.name || 'AutoDrive VMS'}
             </span>
           </Link>
         </div>

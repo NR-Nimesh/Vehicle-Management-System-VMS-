@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { Car, Fuel } from 'lucide-react';
 
-const InvoicePreview = forwardRef(({ bill }, ref) => {
+const InvoicePreview = forwardRef(({ bill, businessProfile = null }, ref) => {
   if (!bill) return null;
 
   return (
@@ -12,9 +12,9 @@ const InvoicePreview = forwardRef(({ bill }, ref) => {
       {/* Invoice Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-6 pb-8 border-b border-slate-200">
         <div className="flex items-start gap-4">
-          {bill.businessLogo ? (
+          {(businessProfile?.logo || bill.businessLogo) ? (
             <img 
-              src={bill.businessLogo} 
+              src={businessProfile?.logo || bill.businessLogo} 
               alt="Logo" 
               className="w-16 h-16 object-contain border border-slate-200 p-1 rounded-xl bg-slate-50" 
             />
@@ -25,13 +25,16 @@ const InvoicePreview = forwardRef(({ bill }, ref) => {
           )}
           <div>
             <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              {bill.businessName || 'AutoDrive Services'}
+              {businessProfile?.name || bill.businessName || 'AutoDrive Services'}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Phone: {bill.businessPhone || 'N/A'} | Email: {bill.businessEmail || 'N/A'}
+              {businessProfile?.address || bill.businessAddress || 'N/A'}
             </p>
-            {bill.businessTaxNumber && (
-              <p className="text-xs text-slate-400 mt-0.5">Tax/VAT ID: {bill.businessTaxNumber}</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Phone: {businessProfile?.phone || bill.businessPhone || 'N/A'} | Email: {businessProfile?.email || bill.businessEmail || 'N/A'}
+            </p>
+            {(businessProfile?.taxNumber || bill.businessTaxNumber) && (
+              <p className="text-xs text-slate-400 mt-0.5">Tax/VAT ID: {businessProfile?.taxNumber || bill.businessTaxNumber}</p>
             )}
           </div>
         </div>
@@ -86,7 +89,7 @@ const InvoicePreview = forwardRef(({ bill }, ref) => {
                   <td className="py-4 px-2 font-medium text-slate-800">
                     {service.type || 'General Maintenance Service'}
                   </td>
-                  <td className="py-4 px-2 text-right">${Number(service.amount || 0).toFixed(2)}</td>
+                  <td className="py-4 px-2 text-right">Rs. {Number(service.amount || 0).toFixed(2)}</td>
                 </tr>
               ))
             ) : (
@@ -94,7 +97,7 @@ const InvoicePreview = forwardRef(({ bill }, ref) => {
                 <td className="py-4 px-2 font-medium text-slate-800">
                   {bill.serviceType || 'General Maintenance Service'}
                 </td>
-                <td className="py-4 px-2 text-right">${Number(bill.amount || 0).toFixed(2)}</td>
+                <td className="py-4 px-2 text-right">Rs. {Number(bill.amount || 0).toFixed(2)}</td>
               </tr>
             )}
           </tbody>
@@ -106,19 +109,32 @@ const InvoicePreview = forwardRef(({ bill }, ref) => {
         <div className="w-full sm:w-80 space-y-2 text-xs">
           <div className="flex justify-between text-slate-500">
             <span>Subtotal:</span>
-            <span>${Number(bill.amount || 0).toFixed(2)}</span>
+            <span>Rs. {Number(bill.amount || 0).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-slate-500">
             <span>Tax (added):</span>
-            <span className="text-rose-600">+${Number(bill.tax || 0).toFixed(2)}</span>
+            <span className="text-rose-600">+Rs. {Number(bill.tax || 0).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-slate-500">
             <span>Discount (deducted):</span>
-            <span className="text-emerald-600">-${Number(bill.discount || 0).toFixed(2)}</span>
+            <span className="text-emerald-600">-Rs. {Number(bill.discount || 0).toFixed(2)}</span>
           </div>
           <div className="flex justify-between border-t border-slate-200 pt-3 text-sm font-bold text-slate-900">
-            <span>Grand Total:</span>
-            <span className="text-indigo-600 text-base font-extrabold">${Number(bill.total || 0).toFixed(2)}</span>
+            <span>Total:</span>
+            <span className="text-indigo-600 text-base font-extrabold">Rs. {Number(bill.total || 0).toFixed(2)}</span>
+          </div>
+          
+          <div className="pt-2 mt-2 border-t border-slate-100 border-dashed space-y-2 text-xs">
+            <div className="flex justify-between text-slate-500">
+              <span>Paid Amount:</span>
+              <span className="text-indigo-600 font-semibold">Rs. {Number(bill.paidAmount || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-bold">
+              <span className="text-slate-700">Pending Amount:</span>
+              <span className={Number(bill.pendingAmount || 0) > 0 ? 'text-amber-500' : 'text-emerald-500'}>
+                Rs. {Number(bill.pendingAmount || 0).toFixed(2)}
+              </span>
+            </div>
           </div>
         </div>
       </div>

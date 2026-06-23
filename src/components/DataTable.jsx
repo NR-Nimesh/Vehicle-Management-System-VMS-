@@ -20,6 +20,7 @@ export default function DataTable({
             <th className="py-4 px-4">Vehicle Number</th>
             <th className="py-4 px-4">Model</th>
             <th className="py-4 px-4">Customer</th>
+            <th className="py-4 px-4 text-center">Status</th>
             <th className="py-4 px-4 text-center">Actions</th>
           </tr>
         </thead>
@@ -64,6 +65,19 @@ export default function DataTable({
                 {/* Customer Name */}
                 <td className="py-3 px-4 text-slate-300 font-medium">
                   {bill.customerName}
+                </td>
+
+                {/* Status */}
+                <td className="py-3 px-4 text-center">
+                  {Number(bill.pendingAmount || 0) <= 0 ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      Paid
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      Pending
+                    </span>
+                  )}
                 </td>
 
                 {/* Actions Row */}

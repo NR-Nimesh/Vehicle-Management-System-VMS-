@@ -95,7 +95,9 @@ router.post('/', async (req, res, next) => {
     amount,
     tax,
     discount,
-    total
+    total,
+    paidAmount,
+    pendingAmount
   } = req.body;
 
   try {
@@ -124,8 +126,8 @@ router.post('/', async (req, res, next) => {
         vehicle_description, customer_name, customer_email, customer_phone,
         business_name, business_phone, business_email, business_logo,
         business_address, business_tax_number, services, service_type, amount,
-        tax, discount, total
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        tax, discount, total, paid_amount, pending_amount
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         finalInvoiceNumber,
         date || null,
@@ -147,7 +149,9 @@ router.post('/', async (req, res, next) => {
         amount || 0,
         tax || 0,
         discount || 0,
-        total || 0
+        total || 0,
+        paidAmount || 0,
+        pendingAmount || 0
       ]
     );
 
@@ -185,7 +189,9 @@ router.put('/:id', async (req, res, next) => {
     amount,
     tax,
     discount,
-    total
+    total,
+    paidAmount,
+    pendingAmount
   } = req.body;
 
   try {
@@ -197,7 +203,7 @@ router.put('/:id', async (req, res, next) => {
         vehicle_description = ?, customer_name = ?, customer_email = ?, customer_phone = ?,
         business_name = ?, business_phone = ?, business_email = ?, business_logo = ?,
         business_address = ?, business_tax_number = ?, services = ?, service_type = ?, amount = ?,
-        tax = ?, discount = ?, total = ?
+        tax = ?, discount = ?, total = ?, paid_amount = ?, pending_amount = ?
       WHERE id = ?`,
       [
         invoiceNumber || null,
@@ -221,6 +227,8 @@ router.put('/:id', async (req, res, next) => {
         tax || 0,
         discount || 0,
         total || 0,
+        paidAmount || 0,
+        pendingAmount || 0,
         id
       ]
     );

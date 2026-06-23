@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 
-export const generateInvoicePDF = (bill) => {
+export const generateInvoicePDF = (bill, businessProfile = null) => {
   // Create instance of jsPDF (A4 size: 210mm x 297mm)
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -34,16 +34,17 @@ export const generateInvoicePDF = (bill) => {
   doc.setTextColor(...darkColor);
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(20);
-  const businessNameX = bill.businessLogo ? 45 : marginX;
-  doc.text(bill.businessName || 'Vehicle Management', businessNameX, 18);
+  const businessNameX = (businessProfile?.logo || bill.businessLogo) ? 45 : marginX;
+  doc.text(businessProfile?.name || bill.businessName || 'AutoDrive Services', businessNameX, 18);
 
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...grayColor);
-  doc.text(`Phone: ${bill.businessPhone || 'N/A'}`, businessNameX, 24);
-  doc.text(`Email: ${bill.businessEmail || 'N/A'}`, businessNameX, 29);
-  if (bill.businessTaxNumber) {
-    doc.text(`Tax/VAT: ${bill.businessTaxNumber}`, businessNameX, 34);
+  doc.text(`${businessProfile?.address || bill.businessAddress || 'N/A'}`, businessNameX, 24);
+  doc.text(`Phone: ${businessProfile?.phone || bill.businessPhone || 'N/A'}`, businessNameX, 29);
+  doc.text(`Email: ${businessProfile?.email || bill.businessEmail || 'N/A'}`, businessNameX, 34);
+  if (businessProfile?.taxNumber || bill.businessTaxNumber) {
+    doc.text(`Tax/VAT: ${businessProfile?.taxNumber || bill.businessTaxNumber}`, businessNameX, 39);
   }
 
   // Invoice Date & ID on Top Right
@@ -151,7 +152,7 @@ export const generateInvoicePDF = (bill) => {
   services.forEach((service, index) => {
     const yPos = currentY + (index * rowHeight) + 6.5;
     doc.text(service.type || 'General Service', marginX + 5, yPos);
-    doc.text(`$${Number(service.amount || 0).toFixed(2)}`, 190, yPos, { align: 'right' });
+    doc.text(`Rs. ${Number(service.amount || 0).toFixed(2)}`, 190, yPos, { align: 'right' });
     
     // Add horizontal line between rows if not last
     if (index < services.length - 1) {
@@ -172,19 +173,19 @@ export const generateInvoicePDF = (bill) => {
   doc.setTextColor(...grayColor);
   doc.text('Subtotal:', labelX, currentY);
   doc.setTextColor(...darkColor);
-  doc.text(`$${Number(bill.amount).toFixed(2)}`, valueX, currentY, { align: 'right' });
+  doc.text(`Rs. ${Number(bill.amount).toFixed(2)}`, valueX, currentY, { align: 'right' });
 
   currentY += 6;
   doc.setTextColor(...grayColor);
   doc.text('Tax:', labelX, currentY);
   doc.setTextColor(...darkColor);
-  doc.text(`+$${Number(bill.tax).toFixed(2)}`, valueX, currentY, { align: 'right' });
+  doc.text(`+Rs. ${Number(bill.tax).toFixed(2)}`, valueX, currentY, { align: 'right' });
 
   currentY += 6;
   doc.setTextColor(...grayColor);
   doc.text('Discount:', labelX, currentY);
   doc.setTextColor(...darkColor);
-  doc.text(`-$${Number(bill.discount).toFixed(2)}`, valueX, currentY, { align: 'right' });
+  doc.text(`-Rs. ${Number(bill.discount).toFixed(2)}`, valueX, currentY, { align: 'right' });
 
   currentY += 8;
   doc.setDrawColor(...primaryColor);
@@ -194,8 +195,28 @@ export const generateInvoicePDF = (bill) => {
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(...primaryColor);
-  doc.text('Grand Total:', labelX, currentY);
-  doc.text(`$${Number(bill.total).toFixed(2)}`, valueX, currentY, { align: 'right' });
+  doc.text('Total:', labelX, currentY);
+  doc.text(`Rs. ${Number(bill.total).toFixed(2)}`, valueX, currentY, { align: 'right' });
+
+  currentY += 6;
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(...grayColor);
+  doc.text('Paid Amount:', labelX, currentY);
+  doc.setTextColor(...darkColor);
+  doc.text(`Rs. ${Number(bill.paidAmount || 0).toFixed(2)}`, valueX, currentY, { align: 'right' });
+
+  currentY += 6;
+  doc.setFont('Helvetica', 'bold');
+  doc.setTextColor(...grayColor);
+  doc.text('Pending Amount:', labelX, currentY);
+  const pending = Number(bill.pendingAmount || 0);
+  if (pending > 0) {
+    doc.setTextColor(245, 158, 11); // Amber for pending
+  } else {
+    doc.setTextColor(16, 185, 129); // Emerald for paid
+  }
+  doc.text(`Rs. ${pending.toFixed(2)}`, valueX, currentY, { align: 'right' });
 
   // Footer Message
   const pageHeight = 297;

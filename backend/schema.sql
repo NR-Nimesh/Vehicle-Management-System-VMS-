@@ -1,4 +1,5 @@
 -- Vehicle Management System schema for MySQL (XAMPP)
+-- Database name must match DB_DATABASE in backend/.env (default: vms_db)
 CREATE DATABASE IF NOT EXISTS vms_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE vms_db;
 
@@ -15,21 +16,21 @@ CREATE TABLE IF NOT EXISTS vehicles (
 );
 
 -- Sample data
-INSERT INTO vehicles (vin, make, model, year, color, mileage, owner) VALUES
+INSERT IGNORE INTO vehicles (vin, make, model, year, color, mileage, owner) VALUES
 ('1HGBH41JXMN109186','Honda','Civic',2018,'Blue',45200,'Alice'),
 ('WP0AA2A97EL012345','Porsche','911',2020,'Red',12000,'Bob');
 
 -- Categories table
 CREATE TABLE IF NOT EXISTS categories (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) UNIQUE,
+  name VARCHAR(255) UNIQUE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT IGNORE INTO categories (name) VALUES 
 ('Lubricants'), ('Brakes'), ('Filters'), ('Electrical'), ('Accessories'), ('Other');
 
--- Items table for inventory (migrating from frontend localStorage)
+-- Items table for inventory
 CREATE TABLE IF NOT EXISTS items (
   id INT AUTO_INCREMENT PRIMARY KEY,
   code VARCHAR(64) UNIQUE,
@@ -40,7 +41,7 @@ CREATE TABLE IF NOT EXISTS items (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO items (code, name, category, price, stock) VALUES
+INSERT IGNORE INTO items (code, name, category, price, stock) VALUES
 ('PART-1001','Oil Filter','Filters',9.99,120),
 ('PART-2002','Engine Air Filter','Filters',15.5,80);
 
@@ -56,7 +57,7 @@ CREATE TABLE IF NOT EXISTS business_profile (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Billing records stored directly in vms_db
+-- Billing records
 CREATE TABLE IF NOT EXISTS bills (
   id INT AUTO_INCREMENT PRIMARY KEY,
   invoice_number VARCHAR(64) UNIQUE,
@@ -75,10 +76,13 @@ CREATE TABLE IF NOT EXISTS bills (
   business_address TEXT,
   business_tax_number VARCHAR(128),
   service_type VARCHAR(255),
+  services JSON,
   amount DECIMAL(10,2) DEFAULT 0.00,
   tax DECIMAL(10,2) DEFAULT 0.00,
   discount DECIMAL(10,2) DEFAULT 0.00,
   total DECIMAL(10,2) DEFAULT 0.00,
+  paid_amount DECIMAL(10,2) DEFAULT 0.00,
+  pending_amount DECIMAL(10,2) DEFAULT 0.00,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -90,3 +94,10 @@ CREATE TABLE IF NOT EXISTS settings (
 
 INSERT IGNORE INTO settings (`key`, `value`) VALUES
 ('latest_invoice_counter', '0');
+
+-- Migration: add missing columns to existing bills tables that were created without them
+-- Run this manually if you already have an existing bills table:
+-- ALTER TABLE bills ADD COLUMN IF NOT EXISTS services JSON;
+-- ALTER TABLE bills ADD COLUMN IF NOT EXISTS paid_amount DECIMAL(10,2) DEFAULT 0.00;
+-- ALTER TABLE bills ADD COLUMN IF NOT EXISTS pending_amount DECIMAL(10,2) DEFAULT 0.00;
+-- (MySQL 8.0.3+ supports IF NOT EXISTS on ALTER; for older versions omit IF NOT EXISTS)

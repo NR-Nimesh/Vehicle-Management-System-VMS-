@@ -57,6 +57,8 @@ export const BillingProvider = ({ children }) => {
       tax: bill.tax,
       discount: bill.discount,
       total: bill.total,
+      paidAmount: bill.paid_amount || bill.paidAmount || 0,
+      pendingAmount: bill.pending_amount || bill.pendingAmount || 0,
       createdAt: bill.created_at,
       updatedAt: bill.updated_at
     };
