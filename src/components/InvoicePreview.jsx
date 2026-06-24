@@ -12,9 +12,9 @@ const InvoicePreview = forwardRef(({ bill, businessProfile = null }, ref) => {
       {/* Invoice Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-6 pb-8 border-b border-slate-200">
         <div className="flex items-start gap-4">
-          {(businessProfile?.logo || bill.businessLogo) ? (
+          {businessProfile?.logo ? (
             <img 
-              src={businessProfile?.logo || bill.businessLogo} 
+              src={businessProfile.logo} 
               alt="Logo" 
               className="w-16 h-16 object-contain border border-slate-200 p-1 rounded-xl bg-slate-50" 
             />
@@ -25,16 +25,16 @@ const InvoicePreview = forwardRef(({ bill, businessProfile = null }, ref) => {
           )}
           <div>
             <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              {businessProfile?.name || bill.businessName || 'AutoDrive Services'}
+              {businessProfile?.name || 'AutoDrive Services'}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              {businessProfile?.address || bill.businessAddress || 'N/A'}
+              {businessProfile?.address || 'N/A'}
             </p>
             <p className="text-xs text-slate-500 mt-0.5">
-              Phone: {businessProfile?.phone || bill.businessPhone || 'N/A'} | Email: {businessProfile?.email || bill.businessEmail || 'N/A'}
+              Phone: {businessProfile?.phone || 'N/A'} | Email: {businessProfile?.email || 'N/A'}
             </p>
-            {(businessProfile?.taxNumber || bill.businessTaxNumber) && (
-              <p className="text-xs text-slate-400 mt-0.5">Tax/VAT ID: {businessProfile?.taxNumber || bill.businessTaxNumber}</p>
+            {businessProfile?.taxNumber && (
+              <p className="text-xs text-slate-400 mt-0.5">Tax/VAT ID: {businessProfile.taxNumber}</p>
             )}
           </div>
         </div>
@@ -142,7 +142,7 @@ const InvoicePreview = forwardRef(({ bill, businessProfile = null }, ref) => {
       {/* Invoice Footer */}
       <div className="mt-16 pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
         <p className="font-semibold text-slate-600 mb-1">Thank you for your business!</p>
-        <p>If you have any questions about this invoice, please contact {bill.businessEmail || 'us'}.</p>
+        <p>If you have any questions about this invoice, please contact {businessProfile?.email || 'us'}.</p>
       </div>
     </div>
   );

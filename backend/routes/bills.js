@@ -5,32 +5,9 @@ const fs = require('fs');
 const path = require('path');
 
 const saveBase64Image = (base64String) => {
-  if (!base64String || !base64String.startsWith('data:image')) {
-    return base64String;
-  }
-  try {
-    const matches = base64String.match(/^data:image\/([A-Za-z-+\/]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return base64String;
-    }
-    let extension = matches[1];
-    if (extension === 'jpeg') extension = 'jpg';
-    
-    const buffer = Buffer.from(matches[2], 'base64');
-    const filename = `vehicle_${Date.now()}_${Math.floor(Math.random() * 1000)}.${extension}`;
-    const uploadPath = path.join(__dirname, '../uploads', filename);
-    
-    // Ensure directory exists
-    if (!fs.existsSync(path.join(__dirname, '../uploads'))) {
-      fs.mkdirSync(path.join(__dirname, '../uploads'), { recursive: true });
-    }
-
-    fs.writeFileSync(uploadPath, buffer);
-    return `http://localhost:${process.env.PORT || 5000}/uploads/${filename}`;
-  } catch (error) {
-    console.error('Error saving image:', error);
-    return base64String;
-  }
+  // Return the base64 string to be stored directly in the database
+  // This is required for serverless environments like Vercel where the filesystem is read-only
+  return base64String;
 };
 
 const formatInvoiceNumber = (counter) => `INV-${String(counter).padStart(4, '0')}`;
@@ -84,12 +61,6 @@ router.post('/', async (req, res, next) => {
     customerName,
     customerEmail,
     customerPhone,
-    businessName,
-    businessPhone,
-    businessEmail,
-    businessLogo,
-    businessAddress,
-    businessTaxNumber,
     services,
     serviceType,
     amount,
@@ -124,10 +95,9 @@ router.post('/', async (req, res, next) => {
       `INSERT INTO bills (
         invoice_number, date, vehicle_photo, vehicle_number, vehicle_model,
         vehicle_description, customer_name, customer_email, customer_phone,
-        business_name, business_phone, business_email, business_logo,
-        business_address, business_tax_number, services, service_type, amount,
+        services, service_type, amount,
         tax, discount, total, paid_amount, pending_amount
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         finalInvoiceNumber,
         date || null,
@@ -138,12 +108,6 @@ router.post('/', async (req, res, next) => {
         customerName || null,
         customerEmail || null,
         customerPhone || null,
-        businessName || null,
-        businessPhone || null,
-        businessEmail || null,
-        businessLogo || null,
-        businessAddress || null,
-        businessTaxNumber || null,
         services ? JSON.stringify(services) : null,
         serviceType || null,
         amount || 0,
@@ -194,12 +158,6 @@ router.put('/:id', async (req, res, next) => {
     customerName,
     customerEmail,
     customerPhone,
-    businessName,
-    businessPhone,
-    businessEmail,
-    businessLogo,
-    businessAddress,
-    businessTaxNumber,
     services,
     serviceType,
     amount,
@@ -217,8 +175,7 @@ router.put('/:id', async (req, res, next) => {
       `UPDATE bills SET
         invoice_number = ?, date = ?, vehicle_photo = ?, vehicle_number = ?, vehicle_model = ?,
         vehicle_description = ?, customer_name = ?, customer_email = ?, customer_phone = ?,
-        business_name = ?, business_phone = ?, business_email = ?, business_logo = ?,
-        business_address = ?, business_tax_number = ?, services = ?, service_type = ?, amount = ?,
+        services = ?, service_type = ?, amount = ?,
         tax = ?, discount = ?, total = ?, paid_amount = ?, pending_amount = ?
       WHERE id = ?`,
       [
@@ -231,12 +188,6 @@ router.put('/:id', async (req, res, next) => {
         customerName || null,
         customerEmail || null,
         customerPhone || null,
-        businessName || null,
-        businessPhone || null,
-        businessEmail || null,
-        businessLogo || null,
-        businessAddress || null,
-        businessTaxNumber || null,
         services ? JSON.stringify(services) : null,
         serviceType || null,
         amount || 0,

@@ -22,9 +22,9 @@ export const generateInvoicePDF = (bill, businessProfile = null) => {
   doc.rect(0, 0, 210, 45, 'F');
 
   // Business Logo & Details
-  if (bill.businessLogo) {
+  if (businessProfile?.logo) {
     try {
-      doc.addImage(bill.businessLogo, 'JPEG', marginX, 10, 25, 25);
+      doc.addImage(businessProfile.logo, 'JPEG', marginX, 10, 25, 25);
     } catch (e) {
       console.warn('Could not render business logo in PDF:', e);
     }
@@ -34,17 +34,17 @@ export const generateInvoicePDF = (bill, businessProfile = null) => {
   doc.setTextColor(...darkColor);
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(20);
-  const businessNameX = (businessProfile?.logo || bill.businessLogo) ? 45 : marginX;
-  doc.text(businessProfile?.name || bill.businessName || 'AutoDrive Services', businessNameX, 18);
+  const businessNameX = businessProfile?.logo ? 45 : marginX;
+  doc.text(businessProfile?.name || 'AutoDrive Services', businessNameX, 18);
 
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...grayColor);
-  doc.text(`${businessProfile?.address || bill.businessAddress || 'N/A'}`, businessNameX, 24);
-  doc.text(`Phone: ${businessProfile?.phone || bill.businessPhone || 'N/A'}`, businessNameX, 29);
-  doc.text(`Email: ${businessProfile?.email || bill.businessEmail || 'N/A'}`, businessNameX, 34);
-  if (businessProfile?.taxNumber || bill.businessTaxNumber) {
-    doc.text(`Tax/VAT: ${businessProfile?.taxNumber || bill.businessTaxNumber}`, businessNameX, 39);
+  doc.text(`${businessProfile?.address || 'N/A'}`, businessNameX, 24);
+  doc.text(`Phone: ${businessProfile?.phone || 'N/A'}`, businessNameX, 29);
+  doc.text(`Email: ${businessProfile?.email || 'N/A'}`, businessNameX, 34);
+  if (businessProfile?.taxNumber) {
+    doc.text(`Tax/VAT: ${businessProfile.taxNumber}`, businessNameX, 39);
   }
 
   // Invoice Date & ID on Top Right

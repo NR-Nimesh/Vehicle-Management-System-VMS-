@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useBilling } from '../context/BillingContext';
 import { useReactToPrint } from 'react-to-print';
 import { generateInvoicePDF } from '../utils/generateInvoice';
-import { compressImage } from '../utils/imageCompressor';
+import { uploadToImgBB } from '../utils/imgbb';
 import InvoicePreview from '../components/InvoicePreview';
 import InputWithIcon from '../components/InputWithIcon';
 import useFormFieldNavigation from '../hooks/useFormFieldNavigation';
@@ -54,10 +54,7 @@ export default function Billing() {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
 
-  // Business
-  const [businessName, setBusinessName] = useState('');
-  const [businessPhone, setBusinessPhone] = useState('');
-  const [businessEmail, setBusinessEmail] = useState('');
+  // Business (removed: will use businessProfile directly in components instead of saving in bill)
 
   // Services — multi-row table
   const [services, setServices] = useState([{ ...DEFAULT_SERVICE }]);
@@ -68,6 +65,7 @@ export default function Billing() {
   // UI states
   const [notification, setNotification] = useState({ type: '', message: '' });
   const [modal, setModal] = useState({ show: false, message: '', type: '' });
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // ── Item Search ───────────────────────────────────────────────────────────
   const [items, setItems] = useState([]);
@@ -109,13 +107,14 @@ export default function Billing() {
     if (currentEditBill) return;
     if (!draftLoaded.current) return;
     const draft = {
-      date, invoiceNumber, vehiclePhoto, vehicleNumber, vehicleModel, vehicleDescription,
-      customerName, customerEmail, customerPhone, businessName, businessPhone, businessEmail,
+      date, invoiceNumber, vehicleNumber, vehicleModel, vehicleDescription,
+      customerName, customerEmail, customerPhone,
       services, tax, discount, paidAmount
+      // vehiclePhoto intentionally excluded — ImgBB URLs are not stored in localStorage
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  }, [date, invoiceNumber, vehiclePhoto, vehicleNumber, vehicleModel, vehicleDescription,
-      customerName, customerEmail, customerPhone, businessName, businessPhone, businessEmail,
+  }, [date, invoiceNumber, vehicleNumber, vehicleModel, vehicleDescription,
+      customerName, customerEmail, customerPhone,
       services, tax, discount, paidAmount, currentEditBill]);
 
   // Load data once on mount
@@ -133,9 +132,6 @@ export default function Billing() {
       setCustomerName(currentEditBill.customerName || '');
       setCustomerEmail(currentEditBill.customerEmail || '');
       setCustomerPhone(sanitizePhone(currentEditBill.customerPhone || ''));
-      setBusinessName(currentEditBill.businessName || '');
-      setBusinessPhone(currentEditBill.businessPhone || '');
-      setBusinessEmail(currentEditBill.businessEmail || '');
       // Support both legacy single-service and new multi-service format
       if (Array.isArray(currentEditBill.services) && currentEditBill.services.length > 0) {
         setServices(currentEditBill.services);
@@ -154,16 +150,13 @@ export default function Billing() {
           const draft = JSON.parse(savedDraft);
           setDate(draft.date || new Date().toISOString().split('T')[0]);
           setInvoiceNumber(draft.invoiceNumber || getNextInvoiceNumber());
-          setVehiclePhoto(draft.vehiclePhoto || '');
+          // vehiclePhoto is NOT restored from draft — photos are hosted on ImgBB and only saved with the bill
           setVehicleNumber(sanitizeVehicleNumber(draft.vehicleNumber || ''));
           setVehicleModel(draft.vehicleModel || '');
           setVehicleDescription(draft.vehicleDescription || '');
           setCustomerName(draft.customerName || '');
           setCustomerEmail(draft.customerEmail || '');
           setCustomerPhone(sanitizePhone(draft.customerPhone || ''));
-          setBusinessName(draft.businessName || '');
-          setBusinessPhone(draft.businessPhone || '');
-          setBusinessEmail(draft.businessEmail || '');
           setServices(Array.isArray(draft.services) && draft.services.length > 0
             ? draft.services
             : [{ ...DEFAULT_SERVICE }]);
@@ -173,19 +166,9 @@ export default function Billing() {
         } catch {
           localStorage.removeItem(DRAFT_KEY);
           setInvoiceNumber(getNextInvoiceNumber());
-          if (businessProfile) {
-            setBusinessName(businessProfile.name || '');
-            setBusinessPhone(businessProfile.phone || '');
-            setBusinessEmail(businessProfile.email || '');
-          }
         }
       } else {
         setInvoiceNumber(getNextInvoiceNumber());
-        if (businessProfile) {
-          setBusinessName(businessProfile.name || '');
-          setBusinessPhone(businessProfile.phone || '');
-          setBusinessEmail(businessProfile.email || '');
-        }
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -208,6 +191,12 @@ export default function Billing() {
   const handleAddItemToBill = (item) => {
     if (item.stock <= 0) {
       showNotification('error', 'Item out of stock.');
+      return;
+    }
+
+    const isAlreadyAdded = services.some(s => s.isItem && s.itemId === item.id);
+    if (isAlreadyAdded) {
+      showNotification('error', 'Item already added.');
       return;
     }
     
@@ -312,20 +301,23 @@ export default function Billing() {
   const paidVal = parseFloat(paidAmount) || 0;
   const pendingVal = finalTotal - paidVal;
 
-  // ── Photo upload ──────────────────────────────────────────────────────────
+  // ── Photo upload (ImgBB) ──────────────────────────────────────────────────
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const compressed = await compressImage(event.target.result, 400, 300);
-        setVehiclePhoto(compressed);
-      } catch {
-        setVehiclePhoto(event.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
+
+    setIsUploadingPhoto(true);
+    setVehiclePhoto(''); // clear old photo
+    try {
+      const url = await uploadToImgBB(file);
+      setVehiclePhoto(url);
+    } catch (err) {
+      showNotification('error', `Photo upload failed: ${err.message}`);
+    } finally {
+      setIsUploadingPhoto(false);
+      // Reset the input so the same file can be re-selected if needed
+      e.target.value = '';
+    }
   };
 
   // ── Build bill data object ────────────────────────────────────────────────
@@ -350,12 +342,6 @@ export default function Billing() {
       customerName,
       customerEmail: normalizeEmail(customerEmail),
       customerPhone: sanitizePhone(customerPhone),
-      businessName,
-      businessPhone,
-      businessEmail,
-      businessLogo: businessProfile?.logo || '',
-      businessAddress: businessProfile?.address || '',
-      businessTaxNumber: businessProfile?.taxNumber || '',
       services: finalServices,
       // Legacy fields for backward compatibility with PDF / print templates
       serviceType: finalServices.map(s => s.type).filter(Boolean).join(', '),
@@ -369,7 +355,7 @@ export default function Billing() {
   };
 
   // ── Save Bill ─────────────────────────────────────────────────────────────
-  const handleSaveBill = async () => {
+  const handleSaveBill = async (action = 'save') => {
     if (!customerName || !vehicleNumber || !vehicleModel) {
       setNotification({
         type: 'error',
@@ -390,18 +376,39 @@ export default function Billing() {
     }
     const billData = getCurrentBillData();
     try {
+      let savedBill;
       if (currentEditBill) {
-        await updateBill({ ...billData, id: currentEditBill.id });
+        savedBill = await updateBill({ ...billData, id: currentEditBill.id }, action === 'save');
       } else {
-        await addBill(billData);
+        savedBill = await addBill(billData);
+        if (action !== 'save') {
+          setCurrentEditBill(savedBill);
+        }
       }
-      setModal({ show: true, message: 'Bill saved successfully!', type: 'success' });
-      const nextInv = await incrementInvoiceCounter();
-      setInvoiceNumber(nextInv);
-      clearNewBillFields();
-      setDate(new Date().toISOString().split('T')[0]);
+      
+      if (savedBill.invoiceNumber !== invoiceNumber) {
+        setInvoiceNumber(savedBill.invoiceNumber);
+      }
+
+      if (action === 'save') {
+        setModal({ show: true, message: 'Bill saved successfully!', type: 'success' });
+        const nextInv = await incrementInvoiceCounter();
+        setInvoiceNumber(nextInv);
+        clearNewBillFields();
+        setDate(new Date().toISOString().split('T')[0]);
+      } else if (action === 'download') {
+        generateInvoicePDF({ ...billData, invoiceNumber: savedBill.invoiceNumber }, businessProfile);
+        if (!currentEditBill) localStorage.removeItem(DRAFT_KEY);
+      } else if (action === 'print') {
+        setTimeout(() => triggerPrint(), 100);
+        if (!currentEditBill) localStorage.removeItem(DRAFT_KEY);
+      }
     } catch (error) {
-      setModal({ show: true, message: `Error saving bill: ${error.message}`, type: 'error' });
+      if (action === 'save') {
+        setModal({ show: true, message: `Error saving bill: ${error.message}`, type: 'error' });
+      } else {
+        showNotification('error', `Error saving bill: ${error.message}`);
+      }
     }
   };
 
@@ -441,7 +448,7 @@ export default function Billing() {
     if (!currentEditBill) localStorage.removeItem(DRAFT_KEY);
   };
 
-  const handlePrint = useReactToPrint({
+  const triggerPrint = useReactToPrint({
     content: () => componentRef.current,
     onAfterPrint: () => { if (!currentEditBill) localStorage.removeItem(DRAFT_KEY); }
   });
@@ -624,19 +631,46 @@ export default function Billing() {
                   <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Vehicle Photo</label>
                   <div className="flex items-center gap-4 border border-slate-700/60 rounded-lg p-3 bg-slate-950/30">
                     <div className="relative w-16 h-12 bg-slate-900 border border-slate-700 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
-                      {vehiclePhoto
-                        ? <img src={vehiclePhoto} alt="Thumbnail" className="w-full h-full object-cover" />
-                        : <Car size={20} className="text-slate-600" />}
+                      {isUploadingPhoto ? (
+                        <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      ) : vehiclePhoto ? (
+                        <img src={vehiclePhoto} alt="Thumbnail" className="w-full h-full object-cover" />
+                      ) : (
+                        <Car size={20} className="text-slate-600" />
+                      )}
                     </div>
                     <div className="flex-1">
-                      <label htmlFor="vehicle-photo" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 rounded-lg text-xs font-medium cursor-pointer transition-colors shadow">
-                        <Upload size={13} />
-                        Upload Photo
+                      <label
+                        htmlFor="vehicle-photo"
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 rounded-lg text-xs font-medium transition-colors shadow ${
+                          isUploadingPhoto ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
+                        }`}
+                      >
+                        {isUploadingPhoto ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-slate-400 border-t-white rounded-full animate-spin"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload size={13} />
+                            Upload Photo
+                          </>
+                        )}
                       </label>
-                      <input type="file" id="vehicle-photo" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
-                      <p className="text-[10px] text-slate-500 mt-1">Accepts PNG, JPEG. Auto-resizes.</p>
+                      <input
+                        type="file"
+                        id="vehicle-photo"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                        disabled={isUploadingPhoto}
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        {vehiclePhoto ? 'Hosted on ImgBB ✓' : 'Accepts PNG, JPEG. Uploaded to ImgBB.'}
+                      </p>
                     </div>
-                    {vehiclePhoto && (
+                    {vehiclePhoto && !isUploadingPhoto && (
                       <button type="button" onClick={() => setVehiclePhoto('')} className="text-xs text-rose-400 hover:text-rose-300 font-semibold">
                         Clear
                       </button>
@@ -937,7 +971,7 @@ export default function Billing() {
                 <button
                   type="button"
                   data-enter-submit
-                  onClick={handleSaveBill}
+                  onClick={() => handleSaveBill('save')}
                   className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20"
                 >
                   <CheckCircle2 size={16} />
@@ -956,7 +990,7 @@ export default function Billing() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={generatePDF}
+                  onClick={() => handleSaveBill('download')}
                   className="p-2.5 border border-slate-700 hover:border-emerald-500/40 rounded-xl hover:bg-slate-800/30 text-emerald-400 hover:text-emerald-300 transition-colors"
                   title="Download PDF Invoice"
                 >
@@ -964,7 +998,7 @@ export default function Billing() {
                 </button>
                 <button
                   type="button"
-                  onClick={handlePrint}
+                  onClick={() => handleSaveBill('print')}
                   className="p-2.5 border border-slate-700 hover:border-indigo-500/40 rounded-xl hover:bg-slate-800/30 text-indigo-400 hover:text-indigo-300 transition-colors"
                   title="Print Invoice"
                 >

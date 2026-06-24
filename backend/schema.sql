@@ -69,12 +69,6 @@ CREATE TABLE IF NOT EXISTS bills (
   customer_name VARCHAR(255),
   customer_email VARCHAR(255),
   customer_phone VARCHAR(64),
-  business_name VARCHAR(255),
-  business_phone VARCHAR(64),
-  business_email VARCHAR(255),
-  business_logo LONGTEXT,
-  business_address TEXT,
-  business_tax_number VARCHAR(128),
   service_type VARCHAR(255),
   services JSON,
   amount DECIMAL(10,2) DEFAULT 0.00,
@@ -94,6 +88,18 @@ CREATE TABLE IF NOT EXISTS settings (
 
 INSERT IGNORE INTO settings (`key`, `value`) VALUES
 ('latest_invoice_counter', '0');
+
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('admin', 'user') DEFAULT 'user',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed default admin user (Password hash needed, but here's the raw command for reference)
+-- INSERT IGNORE INTO users (username, password, role) VALUES ('wasantha', '$2a$10$...', 'admin');
 
 -- Migration: add missing columns to existing bills tables that were created without them
 -- Run this manually if you already have an existing bills table:

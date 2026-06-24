@@ -1,13 +1,25 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
 
+// Support both DB_USER and DB_USERNAME, strip surrounding quotes
+const strip = (v) => v ? v.replace(/^['"]|['"]$/g, '') : v;
+
+const DB_HOST = strip(process.env.DB_HOST) || 'localhost';
+const DB_PORT = parseInt(process.env.DB_PORT) || 3306;
+const DB_USER = strip(process.env.DB_USERNAME || process.env.DB_USER) || 'root';
+const DB_PASS = strip(process.env.DB_PASSWORD) || '';
 // Database name read from env (same as connection.js uses)
-const DB_NAME = process.env.DB_DATABASE || 'vms_db';
+const DB_NAME = strip(process.env.DB_DATABASE) || 'vms_db';
+const IS_REMOTE = DB_HOST !== 'localhost' && DB_HOST !== '127.0.0.1';
 
 // Each statement is run individually so a failure in one doesn't block the rest
+// For remote DBs (TiDB Cloud), skip CREATE DATABASE — the DB already exists
 const getStatements = (dbName) => [
-  `CREATE DATABASE IF NOT EXISTS \`${dbName}\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
-  `USE \`${dbName}\``,
+  ...(IS_REMOTE ? [] : [
+    `CREATE DATABASE IF NOT EXISTS \`${dbName}\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
+    `USE \`${dbName}\``
+  ]),
   `CREATE TABLE IF NOT EXISTS vehicles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     vin VARCHAR(64) UNIQUE,
@@ -56,12 +68,6 @@ const getStatements = (dbName) => [
     customer_name VARCHAR(255),
     customer_email VARCHAR(255),
     customer_phone VARCHAR(64),
-    business_name VARCHAR(255),
-    business_phone VARCHAR(64),
-    business_email VARCHAR(255),
-    business_logo LONGTEXT,
-    business_address TEXT,
-    business_tax_number VARCHAR(128),
     service_type VARCHAR(255),
     services JSON,
     amount DECIMAL(10,2) DEFAULT 0.00,
@@ -79,6 +85,13 @@ const getStatements = (dbName) => [
   )`,
   `INSERT INTO settings (\`key\`, \`value\`) VALUES ('latest_invoice_counter','0')
     ON DUPLICATE KEY UPDATE \`value\` = \`value\``,
+  `CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'user') DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`
 ];
 
 // Migration: safely add missing columns to existing tables (ALTER TABLE IF NOT EXISTS column is MySQL 8.0.3+)
@@ -88,25 +101,37 @@ const migrations = [
   `ALTER TABLE bills ADD COLUMN services JSON`,
   `ALTER TABLE bills ADD COLUMN paid_amount DECIMAL(10,2) DEFAULT 0.00`,
   `ALTER TABLE bills ADD COLUMN pending_amount DECIMAL(10,2) DEFAULT 0.00`,
-  `ALTER TABLE bills ADD COLUMN business_name VARCHAR(255)`,
-  `ALTER TABLE bills ADD COLUMN business_phone VARCHAR(64)`,
-  `ALTER TABLE bills ADD COLUMN business_email VARCHAR(255)`,
-  `ALTER TABLE bills ADD COLUMN business_logo LONGTEXT`,
-  `ALTER TABLE bills ADD COLUMN business_address TEXT`,
-  `ALTER TABLE bills ADD COLUMN business_tax_number VARCHAR(128)`
+  `ALTER TABLE bills DROP COLUMN business_name`,
+  `ALTER TABLE bills DROP COLUMN business_phone`,
+  `ALTER TABLE bills DROP COLUMN business_email`,
+  `ALTER TABLE bills DROP COLUMN business_logo`,
+  `ALTER TABLE bills DROP COLUMN business_address`,
+  `ALTER TABLE bills DROP COLUMN business_tax_number`
 ];
 
 async function initializeDatabase() {
-  const host = process.env.DB_HOST || 'localhost';
-  const port = process.env.DB_PORT || 3306;
-  const user = process.env.DB_USER || 'root';
-  const password = process.env.DB_PASSWORD || '';
+  const sslOption = IS_REMOTE ? { ssl: { rejectUnauthorized: true } } : {};
 
-  const connection = await mysql.createConnection({ host, port, user, password });
+  const connection = await mysql.createConnection({
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASS,
+    database: IS_REMOTE ? DB_NAME : undefined,
+    ...sslOption
+  });
 
   // Run core table creation statements
   for (const sql of getStatements(DB_NAME)) {
     await connection.query(sql);
+  }
+
+  // Seed default admin user
+  const [users] = await connection.query('SELECT id FROM users LIMIT 1');
+  if (users.length === 0) {
+    const adminPassword = await bcrypt.hash('0716192662', 10);
+    await connection.query('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['wasantha', adminPassword, 'admin']);
+    console.log('Default admin user seeded: wasantha');
   }
 
   // Run migrations — each wrapped individually so one failure doesn't abort the rest
@@ -114,8 +139,8 @@ async function initializeDatabase() {
     try {
       await connection.query(sql);
     } catch (err) {
-      if (err.code === 'ER_DUP_FIELDNAME') {
-        // Column already exists — safe to ignore
+      if (err.code === 'ER_DUP_FIELDNAME' || err.code === 'ER_CANT_DROP_FIELD_OR_KEY') {
+        // Column already exists (for ADD) or already dropped (for DROP) — safe to ignore
       } else {
         console.warn(`Migration warning (non-fatal): ${err.message}`);
       }

@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, FileText, History, Package, Briefcase, Menu, X, Car } from 'lucide-react';
+import { Home, FileText, History, Package, Briefcase, Menu, X, Car, Users, LogOut } from 'lucide-react';
 import { useBilling } from '../context/BillingContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { businessProfile } = useBilling();
+  const { user, logout } = useAuth();
 
-  const navItems = [
-    { name: 'Home', path: '/', icon: Home },
-    { name: 'Billing', path: '/billing', icon: FileText },
-    { name: 'Bill History', path: '/history', icon: History },
-    { name: 'Items', path: '/items', icon: Package },
-    { name: 'Business Profile', path: '/business-profile', icon: Briefcase },
+  // If there's no user logged in, we shouldn't show the navbar (or show a minimal one).
+  if (!user) return null;
+
+  const allNavItems = [
+    { name: 'Home', path: '/', icon: Home, roles: ['admin'] },
+    { name: 'Billing', path: '/billing', icon: FileText, roles: ['admin', 'user'] },
+    { name: 'Bill History', path: '/history', icon: History, roles: ['admin'] },
+    { name: 'Items', path: '/items', icon: Package, roles: ['admin', 'user'] },
+    { name: 'Business Profile', path: '/business-profile', icon: Briefcase, roles: ['admin'] },
+    { name: 'User Management', path: '/users', icon: Users, roles: ['admin'] },
   ];
+
+  const navItems = allNavItems.filter(item => item.roles.includes(user.role));
 
   const isActive = (path) => {
     if (path === '/') {
@@ -57,6 +65,13 @@ export default function Navbar() {
               </Link>
             );
           })}
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 border border-transparent"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
         </div>
 
         {/* Mobile menu button */}
@@ -93,6 +108,13 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            <button
+              onClick={logout}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 w-full text-left"
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
           </div>
         </div>
       )}

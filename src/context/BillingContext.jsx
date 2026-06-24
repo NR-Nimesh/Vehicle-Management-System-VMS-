@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiRequest } from '../utils/api';
+import { useAuth } from './AuthContext';
 
 const BillingContext = createContext();
 
@@ -12,6 +13,7 @@ export const useBilling = () => {
 };
 
 export const BillingProvider = ({ children }) => {
+  const { user } = useAuth();
   const [bills, setBills] = useState([]);
   const [businessProfile, setBusinessProfile] = useState({
     name: '',
@@ -45,12 +47,6 @@ export const BillingProvider = ({ children }) => {
       customerName: bill.customer_name || bill.customerName,
       customerEmail: bill.customer_email || bill.customerEmail,
       customerPhone: bill.customer_phone || bill.customerPhone,
-      businessName: bill.business_name || bill.businessName,
-      businessPhone: bill.business_phone || bill.businessPhone,
-      businessEmail: bill.business_email || bill.businessEmail,
-      businessLogo: bill.business_logo || bill.businessLogo,
-      businessAddress: bill.business_address || bill.businessAddress,
-      businessTaxNumber: bill.business_tax_number || bill.businessTaxNumber,
       serviceType: bill.service_type || bill.serviceType,
       services,
       amount: bill.amount,
@@ -105,10 +101,12 @@ export const BillingProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    fetchBills();
-    fetchBusinessProfile();
-    fetchNextInvoiceNumber();
-  }, []);
+    if (user) {
+      fetchBills();
+      fetchBusinessProfile();
+      fetchNextInvoiceNumber();
+    }
+  }, [user]);
 
   const addBill = async (billData) => {
     const newBill = await apiRequest('/bills', {
@@ -120,14 +118,14 @@ export const BillingProvider = ({ children }) => {
     return mapped;
   };
 
-  const updateBill = async (updatedBill) => {
+  const updateBill = async (updatedBill, clearEdit = true) => {
     const updated = await apiRequest(`/bills/${updatedBill.id}`, {
       method: 'PUT',
       body: JSON.stringify(updatedBill)
     });
     const mapped = mapBillData(updated);
     setBills((prev) => prev.map((bill) => (bill.id === mapped.id ? mapped : bill)));
-    if (currentEditBill && currentEditBill.id === mapped.id) {
+    if (clearEdit && currentEditBill && currentEditBill.id === mapped.id) {
       setCurrentEditBill(null);
     }
     return mapped;
