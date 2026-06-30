@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
+const { isAdmin } = require('../middleware/auth');
 
-// GET all categories
+// GET all active categories (hidden from users when pending deletion)
 router.get('/', async (req, res, next) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM categories ORDER BY id ASC');
+    const [rows] = await pool.query(
+      "SELECT * FROM categories WHERE status = 'active' ORDER BY id ASC"
+    );
     res.json(rows);
   } catch (err) {
     next(err);
@@ -20,7 +23,7 @@ router.post('/', async (req, res, next) => {
   }
   try {
     const [result] = await pool.query(
-      'INSERT INTO categories (name) VALUES (?)',
+      "INSERT INTO categories (name, status) VALUES (?, 'active')",
       [name.trim()]
     );
     const [rows] = await pool.query('SELECT * FROM categories WHERE id = ?', [result.insertId]);
@@ -33,24 +36,71 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// DELETE - Delete category and all its items
+// DELETE - Mark category as pending deletion (soft delete) — any authenticated user
 router.delete('/:id', async (req, res, next) => {
   const { id } = req.params;
   try {
-    // First, get the category name so we can delete matching items
-    const [cats] = await pool.query('SELECT name FROM categories WHERE id = ?', [id]);
+    const [cats] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
+    if (!cats.length) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    await pool.query(
+      "UPDATE categories SET status = 'pending_deletion' WHERE id = ?",
+      [id]
+    );
+    res.json({ message: 'Category marked as pending deletion', id: Number(id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Admin-only routes ─────────────────────────────────────────────────────────
+
+// GET all categories pending deletion (admin only)
+router.get('/pending-deletion', isAdmin, async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM categories WHERE status = 'pending_deletion' ORDER BY id ASC"
+    );
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /:id/approve — Admin permanently deletes the category and its items
+router.patch('/:id/approve', isAdmin, async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const [cats] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
     if (!cats.length) {
       return res.status(404).json({ error: 'Category not found' });
     }
     const categoryName = cats[0].name;
-
     // Delete all items belonging to this category
     await pool.query('DELETE FROM items WHERE category = ?', [categoryName]);
-
-    // Delete the category itself
+    // Permanently delete the category
     await pool.query('DELETE FROM categories WHERE id = ?', [id]);
+    res.json({ message: 'Category and all its items permanently deleted', id: Number(id) });
+  } catch (err) {
+    next(err);
+  }
+});
 
-    res.json({ message: 'Category and all its items deleted successfully' });
+// PATCH /:id/reject — Admin restores category back to active
+router.patch('/:id/reject', isAdmin, async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const [cats] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
+    if (!cats.length) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    await pool.query(
+      "UPDATE categories SET status = 'active' WHERE id = ?",
+      [id]
+    );
+    const [rows] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
+    res.json(rows[0]);
   } catch (err) {
     next(err);
   }

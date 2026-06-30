@@ -106,7 +106,12 @@ const migrations = [
   `ALTER TABLE bills DROP COLUMN business_email`,
   `ALTER TABLE bills DROP COLUMN business_logo`,
   `ALTER TABLE bills DROP COLUMN business_address`,
-  `ALTER TABLE bills DROP COLUMN business_tax_number`
+  `ALTER TABLE bills DROP COLUMN business_tax_number`,
+  // Add status column to categories for soft-delete approval workflow
+  `ALTER TABLE categories ADD COLUMN status ENUM('active','pending_deletion') NOT NULL DEFAULT 'active'`,
+  // Ensure all existing categories are marked active
+  `UPDATE categories SET status = 'active' WHERE status IS NULL OR status = ''`
+
 ];
 
 async function initializeDatabase() {

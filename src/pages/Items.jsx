@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Package, Plus, Pencil, Trash2, X, Check, ChevronLeft, Folder, AlertTriangle } from 'lucide-react';
+import {
+  Package, Plus, Pencil, Trash2, X, Check, ChevronLeft,
+  Folder, AlertTriangle, Clock, ShieldAlert, CheckCircle2, XCircle, Inbox
+} from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import useFormFieldNavigation from '../hooks/useFormFieldNavigation';
 import { apiRequest } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Items() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [categories, setCategories] = useState([]);
+  const [pendingCategories, setPendingCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
 
@@ -18,8 +26,13 @@ export default function Items() {
   const [categoryError, setCategoryError] = useState('');
   const [savingCategory, setSavingCategory] = useState(false);
 
-  // Delete confirmation modal
+  // Delete request modal — soft delete (user)
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
+  const [deletingId, setDeletingId] = useState(null);
+
+  // Admin permanent-delete confirmation modal
+  const [confirmApprove, setConfirmApprove] = useState(null); // { id, name }
+  const [processingId, setProcessingId] = useState(null);
 
   // Item form state
   const [showItemForm, setShowItemForm] = useState(false);
@@ -37,12 +50,12 @@ export default function Items() {
       try {
         setLoading(true);
         setError(null);
-        const [catsData, itemsData] = await Promise.all([
-          apiRequest('/categories'),
-          apiRequest('/items')
-        ]);
+        const promises = [apiRequest('/categories'), apiRequest('/items')];
+        if (isAdmin) promises.push(apiRequest('/categories/pending-deletion'));
+        const [catsData, itemsData, pendingData] = await Promise.all(promises);
         setCategories(catsData);
         setItems(itemsData);
+        if (isAdmin && pendingData) setPendingCategories(pendingData);
       } catch (err) {
         console.error('Failed to fetch data:', err);
         setError('Could not connect to database. Please ensure the backend is running.');
@@ -51,7 +64,7 @@ export default function Items() {
       }
     };
     fetchData();
-  }, []);
+  }, [isAdmin]);
 
   // ─── Category Actions ───────────────────────────────────────────────────────
   const handleSaveCategory = async () => {
@@ -82,18 +95,50 @@ export default function Items() {
     if (e.key === 'Escape') { setShowCategoryModal(false); setNewCategoryName(''); setCategoryError(''); }
   };
 
-  const handleDeleteCategoryConfirmed = async () => {
+  // User initiates delete → marks as pending deletion
+  const handleRequestDelete = async () => {
     if (!confirmDelete) return;
+    setDeletingId(confirmDelete.id);
     try {
       await apiRequest(`/categories/${confirmDelete.id}`, { method: 'DELETE' });
+      // Remove from the active list immediately
       setCategories(prev => prev.filter(c => c.id !== confirmDelete.id));
-      // Also remove items from local state
-      setItems(prev => prev.filter(i => i.category !== confirmDelete.name));
       if (selectedCategory === confirmDelete.name) setSelectedCategory(null);
     } catch (err) {
-      console.error('Failed to delete category:', err);
+      console.error('Failed to request category deletion:', err);
     } finally {
       setConfirmDelete(null);
+      setDeletingId(null);
+    }
+  };
+
+  // Admin: permanently delete after approval confirmation
+  const handleApproveDelete = async () => {
+    if (!confirmApprove) return;
+    setProcessingId(confirmApprove.id);
+    try {
+      await apiRequest(`/categories/${confirmApprove.id}/approve`, { method: 'PATCH' });
+      setPendingCategories(prev => prev.filter(c => c.id !== confirmApprove.id));
+      setItems(prev => prev.filter(i => i.category !== confirmApprove.name));
+    } catch (err) {
+      console.error('Failed to approve deletion:', err);
+    } finally {
+      setConfirmApprove(null);
+      setProcessingId(null);
+    }
+  };
+
+  // Admin: reject deletion → restore category
+  const handleRejectDelete = async (cat) => {
+    setProcessingId(cat.id);
+    try {
+      const restored = await apiRequest(`/categories/${cat.id}/reject`, { method: 'PATCH' });
+      setPendingCategories(prev => prev.filter(c => c.id !== cat.id));
+      setCategories(prev => [...prev, restored]);
+    } catch (err) {
+      console.error('Failed to reject deletion:', err);
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -223,51 +268,130 @@ export default function Items() {
 
       {/* ── CATEGORY GRID VIEW ─────────────────────────────────────────────── */}
       {!selectedCategory && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
-          {loading ? (
-            <div className="col-span-full py-12 flex flex-col items-center gap-3 text-slate-500">
-              <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              <span>Loading categories...</span>
-            </div>
-          ) : categories.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-slate-500 bg-slate-800/30 rounded-2xl border border-slate-800 border-dashed">
-              <Folder className="mx-auto mb-3 opacity-50" size={32} />
-              <p>No categories found. Click &quot;+ Category&quot; to create one.</p>
-            </div>
-          ) : (
-            categories.map((cat) => (
-              <div
-                key={cat.id}
-                className="glass-panel border-slate-700/50 hover:border-indigo-500/40 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 flex flex-col overflow-hidden group"
-              >
-                {/* Card Body — clickable */}
-                <div
-                  onClick={() => setSelectedCategory(cat.name)}
-                  className="flex flex-col items-center justify-center text-center gap-4 p-6 flex-1 cursor-pointer"
-                >
-                  <div className="p-3 bg-slate-800 rounded-2xl group-hover:bg-indigo-500/20 transition-colors text-slate-400 group-hover:text-indigo-400">
-                    <Folder size={32} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-200 text-lg group-hover:text-indigo-300 transition-colors">{cat.name}</h3>
-                    <p className="text-sm text-slate-500 mt-1">{getCategoryItemCount(cat.name)} items</p>
-                  </div>
-                </div>
-                {/* Card Footer — Delete button */}
-                <div className="border-t border-slate-800/60 px-4 py-2.5 flex justify-end">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setConfirmDelete({ id: cat.id, name: cat.name }); }}
-                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-rose-500/10"
-                    title="Delete Category"
-                  >
-                    <Trash2 size={13} />
-                    Delete
-                  </button>
-                </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fadeIn">
+            {loading ? (
+              <div className="col-span-full py-12 flex flex-col items-center gap-3 text-slate-500">
+                <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                <span>Loading categories...</span>
               </div>
-            ))
+            ) : categories.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-slate-500 bg-slate-800/30 rounded-2xl border border-slate-800 border-dashed">
+                <Folder className="mx-auto mb-3 opacity-50" size={32} />
+                <p>No categories found. Click &quot;+ Category&quot; to create one.</p>
+              </div>
+            ) : (
+              categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="glass-panel border-slate-700/50 hover:border-indigo-500/40 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 flex flex-col overflow-hidden group"
+                >
+                  {/* Card Body — clickable */}
+                  <div
+                    onClick={() => setSelectedCategory(cat.name)}
+                    className="flex flex-col items-center justify-center text-center gap-4 p-6 flex-1 cursor-pointer"
+                  >
+                    <div className="p-3 bg-slate-800 rounded-2xl group-hover:bg-indigo-500/20 transition-colors text-slate-400 group-hover:text-indigo-400">
+                      <Folder size={32} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-200 text-lg group-hover:text-indigo-300 transition-colors">{cat.name}</h3>
+                      <p className="text-sm text-slate-500 mt-1">{getCategoryItemCount(cat.name)} items</p>
+                    </div>
+                  </div>
+                  {/* Card Footer — Delete button */}
+                  <div className="border-t border-slate-800/60 px-4 py-2.5 flex justify-end">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmDelete({ id: cat.id, name: cat.name }); }}
+                      className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-rose-500/10"
+                      title="Request Category Deletion"
+                    >
+                      <Trash2 size={13} />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* ── ADMIN: Deletion Requests Section ──────────────────────────── */}
+          {isAdmin && (
+            <div className="mt-10 animate-fadeIn">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                  <ShieldAlert size={18} className="text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-200">Deletion Requests</h2>
+                  <p className="text-slate-500 text-xs mt-0.5">Review and approve or reject category deletion requests from users.</p>
+                </div>
+                {pendingCategories.length > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/30">
+                    {pendingCategories.length}
+                  </span>
+                )}
+              </div>
+
+              <div className="glass-panel border-amber-500/10 overflow-hidden">
+                {loading ? (
+                  <div className="py-10 flex justify-center">
+                    <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : pendingCategories.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center gap-3 text-slate-500">
+                    <Inbox size={32} className="opacity-40" />
+                    <p className="text-sm">No pending deletion requests.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-800/60">
+                    {pendingCategories.map(cat => (
+                      <div key={cat.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-800/20 transition-colors">
+                        {/* Icon */}
+                        <div className="p-2 bg-amber-500/10 rounded-xl shrink-0">
+                          <Clock size={18} className="text-amber-400" />
+                        </div>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-200 truncate">{cat.name}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {getCategoryItemCount(cat.name)} items will be deleted if approved
+                          </p>
+                        </div>
+                        {/* Badge */}
+                        <span className="shrink-0 flex items-center gap-1 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
+                          <Clock size={11} />
+                          Pending
+                        </span>
+                        {/* Actions */}
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => handleRejectDelete(cat)}
+                            disabled={processingId === cat.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-700 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            title="Reject — restore category"
+                          >
+                            <XCircle size={13} />
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => setConfirmApprove({ id: cat.id, name: cat.name })}
+                            disabled={processingId === cat.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600/80 hover:bg-rose-500 text-white border border-rose-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            title="Approve — permanently delete"
+                          >
+                            <CheckCircle2 size={13} />
+                            Approve
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {/* ── CATEGORY ITEMS VIEW ────────────────────────────────────────────── */}
@@ -383,20 +507,24 @@ export default function Items() {
         </div>
       )}
 
-      {/* Delete Category Confirmation Modal */}
+      {/* User: Request Deletion Confirmation Modal */}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-rose-500/30 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+          <div className="bg-slate-900 border border-amber-500/30 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
             <div className="flex items-start gap-4 mb-5">
-              <div className="p-2.5 bg-rose-500/15 rounded-xl text-rose-400 shrink-0">
-                <AlertTriangle size={22} />
+              <div className="p-2.5 bg-amber-500/15 rounded-xl text-amber-400 shrink-0">
+                <Clock size={22} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-100">Delete Category?</h3>
+                <h3 className="text-lg font-bold text-slate-100">Request Category Deletion?</h3>
                 <p className="text-slate-400 text-sm mt-1.5">
-                  You are about to delete <span className="text-rose-300 font-semibold">"{confirmDelete.name}"</span>.
-                  This will permanently delete the category and <span className="font-semibold text-rose-300">all {getCategoryItemCount(confirmDelete.name)} items</span> inside it.
-                  This action cannot be undone.
+                  You are requesting to delete{' '}
+                  <span className="text-amber-300 font-semibold">"{confirmDelete.name}"</span>{' '}
+                  and its{' '}
+                  <span className="font-semibold text-amber-300">{getCategoryItemCount(confirmDelete.name)} items</span>.
+                </p>
+                <p className="text-slate-500 text-xs mt-2">
+                  This request will be sent to an admin for review. The category will be hidden from the list until the admin approves or rejects the deletion.
                 </p>
               </div>
             </div>
@@ -408,11 +536,52 @@ export default function Items() {
                 Cancel
               </button>
               <button
-                onClick={handleDeleteCategoryConfirmed}
-                className="px-4 py-2 text-sm bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-1.5"
+                onClick={handleRequestDelete}
+                disabled={deletingId === confirmDelete.id}
+                className="px-4 py-2 text-sm bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-1.5"
+              >
+                <Clock size={14} />
+                {deletingId ? 'Submitting...' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin: Permanent Delete Confirmation Modal */}
+      {confirmApprove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-rose-500/30 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-start gap-4 mb-5">
+              <div className="p-2.5 bg-rose-500/15 rounded-xl text-rose-400 shrink-0">
+                <AlertTriangle size={22} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-100">Permanently Delete Category?</h3>
+                <p className="text-slate-400 text-sm mt-1.5">
+                  Are you sure you want to permanently delete{' '}
+                  <span className="text-rose-300 font-semibold">"{confirmApprove.name}"</span>{' '}
+                  and all its items?
+                </p>
+                <p className="text-rose-400/80 text-xs font-semibold mt-2">
+                  ⚠ This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmApprove(null)}
+                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-lg hover:bg-slate-800/40 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApproveDelete}
+                disabled={processingId === confirmApprove.id}
+                className="px-4 py-2 text-sm bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-1.5"
               >
                 <Trash2 size={14} />
-                Delete
+                {processingId ? 'Deleting...' : 'Yes, Permanently Delete'}
               </button>
             </div>
           </div>

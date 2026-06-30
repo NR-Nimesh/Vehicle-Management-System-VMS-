@@ -14,9 +14,14 @@ const formatInvoiceNumber = (counter) => `INV-${String(counter).padStart(4, '0')
 
 router.get('/next-invoice-number', async (req, res, next) => {
   try {
-    const [rows] = await pool.query("SELECT `value` FROM settings WHERE `key` = 'latest_invoice_counter'");
-    const current = rows.length ? parseInt(rows[0].value, 10) || 0 : 0;
-    res.json({ nextInvoiceNumber: formatInvoiceNumber(current + 1), latestInvoiceCounter: current });
+    const [[maxRow]] = await pool.query(
+      "SELECT MAX(CAST(REGEXP_SUBSTR(invoice_number, '[0-9]+$') AS UNSIGNED)) AS maxNum FROM bills"
+    );
+    const [[settingsRow]] = await pool.query("SELECT `value` FROM settings WHERE `key` = 'latest_invoice_counter'");
+    const settingsCounter = settingsRow ? parseInt(settingsRow.value, 10) || 0 : 0;
+    const dbMax = maxRow?.maxNum || 0;
+    const trueMax = Math.max(settingsCounter, dbMax);
+    res.json({ nextInvoiceNumber: formatInvoiceNumber(trueMax + 1), latestInvoiceCounter: trueMax });
   } catch (err) {
     next(err);
   }
@@ -52,7 +57,6 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   const {
-    invoiceNumber,
     date,
     vehiclePhoto,
     vehicleNumber,
@@ -73,23 +77,25 @@ router.post('/', async (req, res, next) => {
 
   try {
     const finalVehiclePhoto = saveBase64Image(vehiclePhoto);
-    let finalInvoiceNumber = invoiceNumber;
-    const [counterRows] = await pool.query("SELECT `value` FROM settings WHERE `key` = 'latest_invoice_counter'");
-    const current = counterRows.length ? parseInt(counterRows[0].value, 10) || 0 : 0;
 
-    if (!finalInvoiceNumber) {
-      const nextValue = current + 1;
-      await pool.query("INSERT INTO settings (`key`,`value`) VALUES ('latest_invoice_counter', ?) ON DUPLICATE KEY UPDATE `value` = ?", [nextValue, nextValue]);
-      finalInvoiceNumber = formatInvoiceNumber(nextValue);
-    } else {
-      const match = finalInvoiceNumber.match(/(\d+)$/);
-      if (match) {
-        const providedCounter = parseInt(match[1], 10);
-        if (providedCounter > current) {
-          await pool.query("INSERT INTO settings (`key`,`value`) VALUES ('latest_invoice_counter', ?) ON DUPLICATE KEY UPDATE `value` = ?", [providedCounter, providedCounter]);
-        }
-      }
-    }
+    // Auto-heal counter: derive true next number from the actual max invoice in the DB
+    // This fixes cases where the counter fell behind (e.g. after manual inserts or bugs)
+    const [[maxRow]] = await pool.query(
+      "SELECT MAX(CAST(REGEXP_SUBSTR(invoice_number, '[0-9]+$') AS UNSIGNED)) AS maxNum FROM bills"
+    );
+    const [[settingsRow]] = await pool.query("SELECT `value` FROM settings WHERE `key` = 'latest_invoice_counter'");
+    const settingsCounter = settingsRow ? parseInt(settingsRow.value, 10) || 0 : 0;
+    const dbMax = maxRow?.maxNum || 0;
+    // Use whichever is higher so we never collide with existing invoices
+    const trueMax = Math.max(settingsCounter, dbMax);
+    const nextValue = trueMax + 1;
+
+    // Update the settings counter
+    await pool.query(
+      "INSERT INTO settings (`key`,`value`) VALUES ('latest_invoice_counter', ?) ON DUPLICATE KEY UPDATE `value` = ?",
+      [nextValue, nextValue]
+    );
+    const finalInvoiceNumber = formatInvoiceNumber(nextValue);
 
     const [result] = await pool.query(
       `INSERT INTO bills (

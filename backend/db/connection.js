@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const mysql = require('mysql2/promise');
 
 // Support both DB_USER and DB_USERNAME (TiDB Cloud uses DB_USERNAME)
