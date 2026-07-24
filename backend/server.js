@@ -9,6 +9,7 @@ const businessProfileRouter = require('./routes/businessProfile');
 const categoriesRouter = require('./routes/categories');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
+const serviceChargesRouter = require('./routes/serviceCharges');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
@@ -45,6 +46,7 @@ app.use('/api/items', itemsRouter);
 app.use('/api/bills', billsRouter);
 app.use('/api/business-profile', businessProfileRouter);
 app.use('/api/categories', categoriesRouter);
+app.use('/api/service-charges', serviceChargesRouter);
 
 app.get('/', (req, res) => res.json({ message: 'Vehicle Management System API' }));
 

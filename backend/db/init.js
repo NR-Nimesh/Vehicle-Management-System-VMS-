@@ -45,6 +45,17 @@ const getStatements = (dbName) => [
     stock INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
+  `CREATE TABLE IF NOT EXISTS service_charge_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    item_id INT NOT NULL,
+    service_index INT NOT NULL,
+    service_type VARCHAR(255) DEFAULT '',
+    price DECIMAL(10,2) DEFAULT 0.00,
+    green_count INT DEFAULT 0,
+    red_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+  )`,
   `CREATE TABLE IF NOT EXISTS business_profile (
     id INT PRIMARY KEY,
     name VARCHAR(255),
