@@ -32,6 +32,7 @@ export default function Items() {
 
   // Admin permanent-delete confirmation modal
   const [confirmApprove, setConfirmApprove] = useState(null); // { id, name }
+  const [confirmDirectDelete, setConfirmDirectDelete] = useState(null); // { id, name }
   const [processingId, setProcessingId] = useState(null);
 
   // Item form state
@@ -58,7 +59,7 @@ export default function Items() {
         if (isAdmin && pendingData) setPendingCategories(pendingData);
       } catch (err) {
         console.error('Failed to fetch data:', err);
-        setError('Could not connect to database. Please ensure the backend is running.');
+        setError(err.message || 'Could not connect to database. Please ensure the backend is running.');
       } finally {
         setLoading(false);
       }
@@ -106,6 +107,7 @@ export default function Items() {
       if (selectedCategory === confirmDelete.name) setSelectedCategory(null);
     } catch (err) {
       console.error('Failed to request category deletion:', err);
+      setError(`Failed to request category deletion: ${err.message}`);
     } finally {
       setConfirmDelete(null);
       setDeletingId(null);
@@ -119,12 +121,30 @@ export default function Items() {
     try {
       await apiRequest(`/categories/${confirmApprove.id}/approve`, { method: 'PATCH' });
       setPendingCategories(prev => prev.filter(c => c.id !== confirmApprove.id));
-      setItems(prev => prev.filter(i => i.category !== confirmApprove.name));
+      setItems(prev => prev.map(i => i.category === confirmApprove.name ? { ...i, category: null } : i));
     } catch (err) {
       console.error('Failed to approve deletion:', err);
     } finally {
       setConfirmApprove(null);
       setProcessingId(null);
+    }
+  };
+
+  // Admin: permanently delete directly from the active categories grid
+  const handleDirectDelete = async () => {
+    if (!confirmDirectDelete) return;
+    setDeletingId(confirmDirectDelete.id);
+    try {
+      await apiRequest(`/categories/${confirmDirectDelete.id}`, { method: 'DELETE' });
+      setCategories(prev => prev.filter(c => c.id !== confirmDirectDelete.id));
+      setItems(prev => prev.map(i => i.category === confirmDirectDelete.name ? { ...i, category: null } : i));
+      if (selectedCategory === confirmDirectDelete.name) setSelectedCategory(null);
+    } catch (err) {
+      console.error('Failed to directly delete category:', err);
+      setError(`Failed to delete category: ${err.message}`);
+    } finally {
+      setConfirmDirectDelete(null);
+      setDeletingId(null);
     }
   };
 
@@ -302,9 +322,16 @@ export default function Items() {
                   {/* Card Footer — Delete button */}
                   <div className="border-t border-slate-800/60 px-4 py-2.5 flex justify-end">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setConfirmDelete({ id: cat.id, name: cat.name }); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isAdmin) {
+                          setConfirmDirectDelete({ id: cat.id, name: cat.name });
+                        } else {
+                          setConfirmDelete({ id: cat.id, name: cat.name });
+                        }
+                      }}
                       className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-rose-500/10"
-                      title="Request Category Deletion"
+                      title={isAdmin ? "Permanently Delete Category" : "Request Category Deletion"}
                     >
                       <Trash2 size={13} />
                       Delete
@@ -549,7 +576,7 @@ export default function Items() {
       )}
 
       {/* Admin: Permanent Delete Confirmation Modal */}
-      {confirmApprove && (
+      {(confirmApprove || confirmDirectDelete) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
           <div className="bg-slate-900 border border-rose-500/30 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
             <div className="flex items-start gap-4 mb-5">
@@ -560,7 +587,9 @@ export default function Items() {
                 <h3 className="text-lg font-bold text-slate-100">Permanently Delete Category?</h3>
                 <p className="text-slate-400 text-sm mt-1.5">
                   Are you sure you want to permanently delete{' '}
-                  <span className="text-rose-300 font-semibold">"{confirmApprove.name}"</span>{' '}
+                  <span className="text-rose-300 font-semibold">
+                    "{confirmApprove ? confirmApprove.name : confirmDirectDelete?.name}"
+                  </span>{' '}
                   and all its items?
                 </p>
                 <p className="text-rose-400/80 text-xs font-semibold mt-2">
@@ -570,18 +599,18 @@ export default function Items() {
             </div>
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setConfirmApprove(null)}
+                onClick={() => { setConfirmApprove(null); setConfirmDirectDelete(null); }}
                 className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-lg hover:bg-slate-800/40 transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleApproveDelete}
-                disabled={processingId === confirmApprove.id}
+                onClick={confirmApprove ? handleApproveDelete : handleDirectDelete}
+                disabled={(confirmApprove && processingId === confirmApprove.id) || (confirmDirectDelete && deletingId === confirmDirectDelete.id)}
                 className="px-4 py-2 text-sm bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-1.5"
               >
                 <Trash2 size={14} />
-                {processingId ? 'Deleting...' : 'Yes, Permanently Delete'}
+                {(processingId || deletingId) ? 'Deleting...' : 'Yes, Permanently Delete'}
               </button>
             </div>
           </div>

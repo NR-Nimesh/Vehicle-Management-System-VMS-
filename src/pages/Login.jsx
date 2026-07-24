@@ -19,7 +19,7 @@ export default function Login() {
 
     try {
       const user = await login(username, password);
-      
+
       const from = location.state?.from?.pathname;
       if (from && from !== '/login') {
         navigate(from, { replace: true });

@@ -36,8 +36,6 @@ const getStatements = (dbName) => [
     name VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
-  `INSERT IGNORE INTO categories (name) VALUES
-    ('Lubricants'), ('Brakes'), ('Filters'), ('Electrical'), ('Accessories'), ('Other')`,
   `CREATE TABLE IF NOT EXISTS items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(64) UNIQUE,
@@ -137,6 +135,16 @@ async function initializeDatabase() {
     const adminPassword = await bcrypt.hash('0716192662', 10);
     await connection.query('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['wasantha', adminPassword, 'admin']);
     console.log('Default admin user seeded: wasantha');
+  }
+
+  // Seed default categories ONLY if the table is completely empty (i.e. fresh install)
+  const [catCount] = await connection.query('SELECT COUNT(*) as count FROM categories');
+  if (catCount[0].count === 0) {
+    await connection.query(`
+      INSERT IGNORE INTO categories (name) VALUES
+      ('Lubricants'), ('Brakes'), ('Filters'), ('Electrical'), ('Accessories'), ('Other')
+    `);
+    console.log('Default categories seeded.');
   }
 
   // Run migrations — each wrapped individually so one failure doesn't abort the rest

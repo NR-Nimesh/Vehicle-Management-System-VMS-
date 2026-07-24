@@ -9,6 +9,9 @@ router.get('/', async (req, res, next) => {
     const [rows] = await pool.query(
       "SELECT * FROM categories WHERE status = 'active' ORDER BY id ASC"
     );
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     res.json(rows);
   } catch (err) {
     next(err);
@@ -36,7 +39,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// DELETE - Mark category as pending deletion (soft delete) — any authenticated user
+// DELETE - Mark category as pending deletion (soft delete) for users, or hard delete for admins
 router.delete('/:id', async (req, res, next) => {
   const { id } = req.params;
   try {
@@ -44,11 +47,31 @@ router.delete('/:id', async (req, res, next) => {
     if (!cats.length) {
       return res.status(404).json({ error: 'Category not found' });
     }
-    await pool.query(
-      "UPDATE categories SET status = 'pending_deletion' WHERE id = ?",
-      [id]
-    );
-    res.json({ message: 'Category marked as pending deletion', id: Number(id) });
+    
+    if (req.user && req.user.role === 'admin') {
+      // Direct hard delete by admin
+      const categoryName = cats[0].name;
+      const conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+        await conn.query('UPDATE items SET category = NULL WHERE category = ?', [categoryName]);
+        await conn.query('DELETE FROM categories WHERE id = ?', [id]);
+        await conn.commit();
+        res.json({ message: 'Category permanently deleted directly', id: Number(id), directDelete: true });
+      } catch (err) {
+        await conn.rollback();
+        throw err;
+      } finally {
+        conn.release();
+      }
+    } else {
+      // Soft delete by user
+      await pool.query(
+        "UPDATE categories SET status = 'pending_deletion' WHERE id = ?",
+        [id]
+      );
+      res.json({ message: 'Category marked as pending deletion', id: Number(id) });
+    }
   } catch (err) {
     next(err);
   }
@@ -62,13 +85,16 @@ router.get('/pending-deletion', isAdmin, async (req, res, next) => {
     const [rows] = await pool.query(
       "SELECT * FROM categories WHERE status = 'pending_deletion' ORDER BY id ASC"
     );
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     res.json(rows);
   } catch (err) {
     next(err);
   }
 });
 
-// PATCH /:id/approve — Admin permanently deletes the category and its items
+// PATCH /:id/approve — Admin permanently deletes the category and unlinks its items
 router.patch('/:id/approve', isAdmin, async (req, res, next) => {
   const { id } = req.params;
   try {
@@ -77,11 +103,22 @@ router.patch('/:id/approve', isAdmin, async (req, res, next) => {
       return res.status(404).json({ error: 'Category not found' });
     }
     const categoryName = cats[0].name;
-    // Delete all items belonging to this category
-    await pool.query('DELETE FROM items WHERE category = ?', [categoryName]);
-    // Permanently delete the category
-    await pool.query('DELETE FROM categories WHERE id = ?', [id]);
-    res.json({ message: 'Category and all its items permanently deleted', id: Number(id) });
+    
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      // Safely unlink all items belonging to this category
+      await conn.query('UPDATE items SET category = NULL WHERE category = ?', [categoryName]);
+      // Permanently delete the category
+      await conn.query('DELETE FROM categories WHERE id = ?', [id]);
+      await conn.commit();
+      res.json({ message: 'Category permanently deleted and items unlinked', id: Number(id) });
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
   } catch (err) {
     next(err);
   }
