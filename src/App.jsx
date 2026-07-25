@@ -17,8 +17,8 @@ function App() {
     <AuthProvider>
       <BillingProvider>
         <Router>
-        <div className="min-h-screen pb-12">
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div className="min-h-screen pb-12 overflow-x-hidden" style={{paddingBottom: 'max(3rem, env(safe-area-inset-bottom))'}}>
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 overflow-x-hidden">
             <Navbar />
             <main className="w-full">
               <Routes>

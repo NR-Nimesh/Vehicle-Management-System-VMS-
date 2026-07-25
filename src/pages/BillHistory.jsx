@@ -106,7 +106,7 @@ export default function BillHistory() {
         <div className="flex shrink-0 w-full md:w-auto items-center gap-3">
           <button
             onClick={toggleSortOrder}
-            className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 border border-slate-700 hover:border-slate-600 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800/40 text-slate-300"
+            className="w-full md:w-auto flex items-center justify-center gap-2 px-4 min-h-[48px] border border-slate-700 hover:border-slate-600 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800/40 text-slate-300 active:scale-95 touch-manipulation"
           >
             <ArrowUpDown size={16} className="text-indigo-400" />
             Sort by: {sortOrder === 'newest' ? 'Newest' : 'Oldest'}
@@ -135,8 +135,8 @@ export default function BillHistory() {
       {/* 1. VIEW DETAILS MODAL */}
       {/* ========================================================================= */}
       {selectedDetailBill && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="glass-panel w-full max-w-3xl overflow-hidden shadow-2xl animate-scaleIn border-slate-700 bg-slate-900">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="glass-panel w-full sm:max-w-3xl overflow-hidden shadow-2xl border-slate-700 bg-slate-900 rounded-t-3xl sm:rounded-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/40">
               <div className="flex items-center gap-2 text-indigo-400">
@@ -162,7 +162,7 @@ export default function BillHistory() {
             </div>
 
             {/* Modal Scroll Content */}
-            <div className="p-6 max-h-[75vh] overflow-y-auto space-y-6">
+            <div className="p-4 sm:p-6 max-h-[70vh] overflow-y-auto space-y-6" style={{WebkitOverflowScrolling: 'touch'}}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 {/* Column 1: Client and Business */}
@@ -251,10 +251,10 @@ export default function BillHistory() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-slate-800 flex items-center justify-end gap-3 bg-slate-950/20">
+            <div className="px-4 sm:px-6 py-4 border-t border-slate-800 flex items-center justify-end gap-3 bg-slate-950/20">
               <button
                 onClick={() => setSelectedDetailBill(null)}
-                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 border border-slate-800 rounded-xl hover:bg-slate-800/50 transition-colors"
+                className="w-full sm:w-auto min-h-[48px] px-6 text-sm text-slate-400 hover:text-slate-200 border border-slate-800 rounded-xl hover:bg-slate-800/50 transition-colors active:scale-95 touch-manipulation"
               >
                 Close Details
               </button>
@@ -267,8 +267,8 @@ export default function BillHistory() {
       {/* 2. INVOICE PREVIEW MODAL */}
       {/* ========================================================================= */}
       {selectedPreviewBill && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto animate-fadeIn">
-          <div className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto animate-fadeIn">
+          <div className="w-full sm:max-w-4xl bg-slate-900 border-t sm:border border-slate-800 rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh]">
             
             {/* Modal Header (Floating Controls) */}
             <div className="flex items-center justify-between px-6 py-4 bg-slate-950/60 border-b border-slate-800">
@@ -276,10 +276,10 @@ export default function BillHistory() {
                 <span className="text-sm font-semibold text-indigo-400 font-mono">{selectedPreviewBill.invoiceNumber}</span>
                 <span className="text-xs text-slate-500">| Preview Document</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={handleModalPrint}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-indigo-500/30 text-indigo-400 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all"
+                  className="min-h-[44px] px-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-indigo-500/30 text-indigo-400 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all active:scale-95 touch-manipulation"
                   title="Print Invoice"
                 >
                   <Printer size={13} />
@@ -288,7 +288,7 @@ export default function BillHistory() {
 
                 <button
                   onClick={() => handleDownloadInvoice(selectedPreviewBill)}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-all"
+                  className="min-h-[44px] px-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-all active:scale-95 touch-manipulation"
                   title="Download PDF"
                 >
                   <Download size={13} />
@@ -297,7 +297,7 @@ export default function BillHistory() {
 
                 <button
                   onClick={() => setSelectedPreviewBill(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700 ml-2"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700 ml-auto active:scale-95 touch-manipulation"
                 >
                   <X size={18} />
                 </button>

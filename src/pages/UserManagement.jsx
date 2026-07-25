@@ -127,7 +127,7 @@ export default function UserManagement() {
         </div>
       )}
 
-      <div className="glass-panel overflow-hidden">
+      <div className="glass-panel overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
@@ -180,15 +180,55 @@ export default function UserManagement() {
         </div>
       </div>
 
+      {/* Mobile Card Layout (visible on < md) */}
+      <div className="md:hidden space-y-4">
+        {users.map(user => (
+          <div key={user.id} className="glass-card p-4 flex flex-col gap-3">
+            <div className="flex justify-between items-center">
+              <span className="font-mono text-slate-500 text-xs">#{user.id}</span>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                user.role === 'admin' 
+                  ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' 
+                  : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+              }`}>
+                {user.role}
+              </span>
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-200">{user.username}</h4>
+            </div>
+            <div className="border-t border-slate-800/60 pt-3 flex justify-end gap-2">
+              <button
+                onClick={() => openEditModal(user)}
+                className="flex items-center justify-center min-w-[48px] min-h-[48px] bg-indigo-600/10 text-indigo-400 rounded-xl hover:bg-indigo-600/20 active:scale-95 touch-manipulation"
+                title="Edit User"
+              >
+                <Edit2 size={18} />
+              </button>
+              <button
+                onClick={() => handleDelete(user.id)}
+                className="flex items-center justify-center min-w-[48px] min-h-[48px] bg-rose-500/10 text-rose-400 rounded-xl hover:bg-rose-500/20 active:scale-95 touch-manipulation"
+                title="Delete User"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          </div>
+        ))}
+        {users.length === 0 && (
+          <div className="py-8 text-center text-slate-500">No users found.</div>
+        )}
+      </div>
+
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-md w-full animate-fadeIn">
+        <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-0 sm:p-4">
+          <div className="bg-slate-900 border-t sm:border border-slate-700 p-6 sm:rounded-2xl rounded-t-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-fadeIn">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-100">
                 {editingUser ? 'Edit User' : 'Add New User'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-200">
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-200 min-w-[48px] min-h-[48px] flex items-center justify-center">
                 <X size={20} />
               </button>
             </div>
@@ -209,6 +249,7 @@ export default function UserManagement() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="glass-input w-full"
+                  inputMode="text"
                 />
               </div>
               
@@ -241,14 +282,14 @@ export default function UserManagement() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition-colors"
+                  className="flex-1 min-h-[48px] py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition-all active:scale-95 touch-manipulation"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white font-medium rounded-xl transition-colors flex justify-center items-center gap-2"
+                  className="flex-1 min-h-[48px] py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white font-medium rounded-xl transition-all active:scale-95 touch-manipulation flex justify-center items-center gap-2"
                 >
                   {isSubmitting ? (
                     <div className="w-4 h-4 border-2 border-slate-300 border-t-white rounded-full animate-spin"></div>

@@ -100,8 +100,8 @@ export default function BusinessProfile() {
                   <Building2 size={36} className="text-slate-600 group-hover:text-indigo-400 transition-colors" />
                 )}
               </div>
-              <label htmlFor="logo-upload" className="absolute bottom-1 right-1 bg-indigo-600 hover:bg-indigo-500 text-white p-1.5 rounded-lg cursor-pointer transition-colors shadow-lg shadow-indigo-600/30">
-                <Upload size={14} />
+              <label htmlFor="logo-upload" className="absolute -bottom-1 -right-1 bg-indigo-600 hover:bg-indigo-500 text-white p-3 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl cursor-pointer transition-colors shadow-lg shadow-indigo-600/30 touch-manipulation">
+                <Upload size={18} />
               </label>
               <input 
                 type="file" 
@@ -120,7 +120,7 @@ export default function BusinessProfile() {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, logo: '' }))}
-                  className="mt-2 text-xs text-rose-400 hover:text-rose-300 font-medium transition-colors"
+                  className="mt-3 text-xs text-rose-400 hover:text-rose-300 font-medium transition-colors min-h-[48px] px-4 py-2 border border-rose-500/20 hover:bg-rose-500/10 rounded-xl flex items-center justify-center w-full sm:w-auto touch-manipulation"
                 >
                   Remove Logo
                 </button>
@@ -143,6 +143,7 @@ export default function BusinessProfile() {
                 onChange={handleChange}
                 placeholder="e.g. Acme Auto Services"
                 className="glass-input w-full"
+                inputMode="text"
               />
             </div>
 
@@ -158,6 +159,7 @@ export default function BusinessProfile() {
                 onChange={handleChange}
                 placeholder="e.g. TAX-987654321"
                 className="glass-input w-full"
+                inputMode="text"
               />
             </div>
 
@@ -173,6 +175,7 @@ export default function BusinessProfile() {
                 onChange={handleChange}
                 placeholder="e.g. +1 (555) 019-2834"
                 className="glass-input w-full"
+                inputMode="tel"
               />
             </div>
 
@@ -188,6 +191,7 @@ export default function BusinessProfile() {
                 onChange={handleChange}
                 placeholder="e.g. info@acmeauto.com"
                 className="glass-input w-full"
+                inputMode="email"
               />
             </div>
 
@@ -203,6 +207,7 @@ export default function BusinessProfile() {
                 onChange={handleChange}
                 placeholder="e.g. 123 Gearbox Lane, Auto City, AC 94012"
                 className="glass-input resize-none w-full"
+                inputMode="text"
               />
             </div>
           </div>
@@ -212,7 +217,7 @@ export default function BusinessProfile() {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/35 hover:scale-102 flex items-center gap-2"
+              className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/35 active:scale-95 flex items-center justify-center gap-2 touch-manipulation"
             >
               {saving ? (
                 <>

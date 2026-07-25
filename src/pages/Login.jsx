@@ -74,6 +74,7 @@ export default function Login() {
                   onChange={(e) => setUsername(e.target.value)}
                   className="glass-input glass-input-icon-left w-full"
                   placeholder="Enter your username"
+                  inputMode="text"
                 />
               </div>
             </div>
@@ -98,7 +99,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex justify-center items-center gap-2"
+              className="w-full min-h-[48px] py-3 px-4 bg-indigo-600 hover:bg-indigo-500 active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex justify-center items-center gap-2 touch-manipulation"
             >
               {isSubmitting ? (
                 <>

@@ -367,35 +367,41 @@ export default function Items() {
                 ) : (
                   <div className="divide-y divide-slate-800/60">
                     {pendingCategories.map(cat => (
-                      <div key={cat.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-800/20 transition-colors">
-                        <div className="p-2 bg-amber-500/10 rounded-xl shrink-0">
-                          <Clock size={18} className="text-amber-400" />
+                      <div key={cat.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 sm:px-5 py-4 hover:bg-slate-800/20 transition-colors">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="p-2 bg-amber-500/10 rounded-xl shrink-0">
+                            <Clock size={18} className="text-amber-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-slate-200 truncate">{cat.name}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {getCategoryItemCount(cat.name)} items will be deleted if approved
+                            </p>
+                          </div>
+                          <span className="shrink-0 sm:hidden flex items-center gap-1 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
+                            <Clock size={11} />
+                            Pending
+                          </span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-200 truncate">{cat.name}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {getCategoryItemCount(cat.name)} items will be deleted if approved
-                          </p>
-                        </div>
-                        <span className="shrink-0 flex items-center gap-1 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
-                          <Clock size={11} />
-                          Pending
-                        </span>
-                        <div className="flex gap-2 shrink-0">
+                        <div className="flex items-center gap-2 sm:shrink-0">
+                          <span className="hidden sm:flex shrink-0 items-center gap-1 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
+                            <Clock size={11} />
+                            Pending
+                          </span>
                           <button
                             onClick={() => handleRejectDelete(cat)}
                             disabled={processingId === cat.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-700 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[48px] px-4 text-sm font-semibold rounded-xl border border-slate-700 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 touch-manipulation"
                           >
-                            <XCircle size={13} />
+                            <XCircle size={16} />
                             Reject
                           </button>
                           <button
                             onClick={() => setConfirmApprove({ id: cat.id, name: cat.name })}
                             disabled={processingId === cat.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600/80 hover:bg-rose-500 text-white border border-rose-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 min-h-[48px] px-4 text-sm font-semibold rounded-xl bg-rose-600/80 hover:bg-rose-500 text-white border border-rose-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 touch-manipulation"
                           >
-                            <CheckCircle2 size={13} />
+                            <CheckCircle2 size={16} />
                             Approve
                           </button>
                         </div>
@@ -427,14 +433,18 @@ export default function Items() {
             </div>
           </div>
 
-          <div className="overflow-x-auto border border-slate-800 rounded-xl">
+          {/* Desktop Items Table (md+) */}
+          <div
+            className="hidden md:block overflow-x-auto border border-slate-800 rounded-xl"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-slate-950/40 text-slate-400 font-semibold border-b border-slate-800">
                   <th className="py-3 px-4">Item Code</th>
                   <th className="py-3 px-4">Item Name</th>
                   <th className="py-3 px-4 text-right">Price</th>
-                  <th className="py-3 px-4 text-center">Stock Quantity</th>
+                  <th className="py-3 px-4 text-center">Stock Qty</th>
                   <th className="py-3 px-4 text-center">Actions</th>
                 </tr>
               </thead>
@@ -444,28 +454,14 @@ export default function Items() {
                     <tr key={item.id} className="hover:bg-slate-800/15 transition-colors">
                       <td className="py-3 px-4 font-mono text-indigo-400 text-xs">{item.code}</td>
                       <td className="py-3 px-4 font-medium text-slate-200">{item.name}</td>
-                      <td className="py-3 px-4 text-right font-semibold text-slate-200">${Number(item.price || 0).toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right font-semibold text-slate-200">Rs. {Number(item.price || 0).toFixed(2)}</td>
                       <td className="py-3 px-4 text-center">
-                        <span className={`font-semibold ${item.stock < 10 ? 'text-rose-400' : 'text-slate-300'}`}>
-                          {item.stock}
-                        </span>
+                        <span className={`font-semibold ${item.stock < 10 ? 'text-rose-400' : 'text-slate-300'}`}>{item.stock}</span>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/10 transition-colors"
-                            title="Edit Item"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors"
-                            title="Delete Item"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <button onClick={() => handleEdit(item)} className="min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/10 transition-colors active:scale-95 touch-manipulation" title="Edit Item"><Pencil size={14} /></button>
+                          <button onClick={() => handleDeleteItem(item.id)} className="min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-colors active:scale-95 touch-manipulation" title="Delete Item"><Trash2 size={14} /></button>
                         </div>
                       </td>
                     </tr>
@@ -482,6 +478,39 @@ export default function Items() {
             </table>
           </div>
 
+          {/* Mobile Items Card Layout (< md) */}
+          <div className="md:hidden space-y-3">
+            {filteredItems.length > 0 ? (
+              filteredItems.map(item => (
+                <div key={item.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-mono text-xs text-indigo-400 font-semibold">{item.code}</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ item.stock < 10 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' }`}>
+                        Qty: {item.stock}
+                      </span>
+                    </div>
+                    <p className="font-bold text-slate-200 text-base">{item.name}</p>
+                    <p className="text-indigo-400 font-semibold mt-1">Rs. {Number(item.price || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="border-t border-slate-800/60 grid grid-cols-2 divide-x divide-slate-800/60">
+                    <button onClick={() => handleEdit(item)} className="flex items-center justify-center gap-2 min-h-[48px] text-indigo-400 hover:bg-indigo-500/10 transition-colors text-sm font-medium active:scale-95 touch-manipulation">
+                      <Pencil size={15} /> Edit
+                    </button>
+                    <button onClick={() => handleDeleteItem(item.id)} className="flex items-center justify-center gap-2 min-h-[48px] text-rose-400 hover:bg-rose-500/10 transition-colors text-sm font-medium active:scale-95 touch-manipulation">
+                      <Trash2 size={15} /> Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center text-slate-500">
+                <Package className="mx-auto mb-3 opacity-50" size={32} />
+                <p>No items found in this category.</p>
+              </div>
+            )}
+          </div>
+
           <div className="text-xs text-slate-500">
             Showing {filteredItems.length} of {currentCategoryItems.length} items
           </div>
@@ -492,9 +521,12 @@ export default function Items() {
 
       {/* Add Category Modal */}
       {showCategoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-slate-100 mb-5">New Category</h3>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border-t sm:border border-slate-700 w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-xl font-bold text-slate-100">New Category</h3>
+              <button onClick={() => { setShowCategoryModal(false); setNewCategoryName(''); setCategoryError(''); }} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-slate-200 active:scale-95 touch-manipulation"><X size={18} /></button>
+            </div>
             <input
               type="text"
               autoFocus
@@ -503,22 +535,23 @@ export default function Items() {
               onKeyDown={handleCategoryModalKeyDown}
               placeholder="Category Name"
               className="glass-input w-full mb-2"
+              inputMode="text"
             />
             {categoryError && (
               <p className="text-rose-400 text-xs mb-4">{categoryError}</p>
             )}
             {!categoryError && <div className="mb-4" />}
-            <div className="flex justify-end gap-3">
+            <div className="flex gap-3">
               <button
                 onClick={() => { setShowCategoryModal(false); setNewCategoryName(''); setCategoryError(''); }}
-                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-lg hover:bg-slate-800/40 transition-colors"
+                className="flex-1 min-h-[48px] text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-xl hover:bg-slate-800/40 transition-colors active:scale-95 touch-manipulation"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveCategory}
                 disabled={savingCategory || !newCategoryName.trim()}
-                className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg shadow-lg transition-colors"
+                className="flex-1 min-h-[48px] text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-lg transition-colors active:scale-95 touch-manipulation"
               >
                 {savingCategory ? 'Saving...' : 'Save'}
               </button>
@@ -529,8 +562,8 @@ export default function Items() {
 
       {/* User: Request Deletion Confirmation Modal */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-amber-500/30 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border-t sm:border border-amber-500/30 w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl">
             <div className="flex items-start gap-4 mb-5">
               <div className="p-2.5 bg-amber-500/15 rounded-xl text-amber-400 shrink-0">
                 <Clock size={22} />
@@ -546,17 +579,17 @@ export default function Items() {
                 <p className="text-slate-500 text-xs mt-2">This request will be sent to an admin for review.</p>
               </div>
             </div>
-            <div className="flex justify-end gap-3">
+            <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-lg hover:bg-slate-800/40 transition-colors"
+                className="flex-1 min-h-[48px] text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-xl hover:bg-slate-800/40 transition-colors active:scale-95 touch-manipulation"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRequestDelete}
                 disabled={deletingId === confirmDelete.id}
-                className="px-4 py-2 text-sm bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-1.5"
+                className="flex-1 min-h-[48px] text-sm bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
               >
                 <Clock size={14} />
                 {deletingId ? 'Submitting...' : 'Submit Request'}
@@ -568,8 +601,8 @@ export default function Items() {
 
       {/* Admin: Permanent Delete Confirmation Modal */}
       {(confirmApprove || confirmDirectDelete) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-rose-500/30 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border-t sm:border border-rose-500/30 w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl">
             <div className="flex items-start gap-4 mb-5">
               <div className="p-2.5 bg-rose-500/15 rounded-xl text-rose-400 shrink-0">
                 <AlertTriangle size={22} />
@@ -586,17 +619,17 @@ export default function Items() {
                 <p className="text-rose-400/80 text-xs font-semibold mt-2">⚠ This action cannot be undone.</p>
               </div>
             </div>
-            <div className="flex justify-end gap-3">
+            <div className="flex gap-3">
               <button
                 onClick={() => { setConfirmApprove(null); setConfirmDirectDelete(null); }}
-                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-lg hover:bg-slate-800/40 transition-colors"
+                className="flex-1 min-h-[48px] text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-xl hover:bg-slate-800/40 transition-colors active:scale-95 touch-manipulation"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmApprove ? handleApproveDelete : handleDirectDelete}
                 disabled={(confirmApprove && processingId === confirmApprove.id) || (confirmDirectDelete && deletingId === confirmDirectDelete.id)}
-                className="px-4 py-2 text-sm bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-1.5"
+                className="flex-1 min-h-[48px] text-sm bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
               >
                 <Trash2 size={14} />
                 {(processingId || deletingId) ? 'Deleting...' : 'Yes, Permanently Delete'}
@@ -608,13 +641,13 @@ export default function Items() {
 
       {/* Add/Edit Item Modal */}
       {showItemForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border-t sm:border border-slate-700 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-slate-100">
                 {editingItem ? 'Edit Item' : 'Add New Item'}
               </h3>
-              <button onClick={() => { setShowItemForm(false); setEditingItem(null); }} className="text-slate-400 hover:text-slate-200">
+              <button onClick={() => { setShowItemForm(false); setEditingItem(null); }} className="min-w-[48px] min-h-[48px] flex items-center justify-center text-slate-400 hover:text-slate-200 active:scale-95 touch-manipulation">
                 <X size={18} />
               </button>
             </div>
@@ -628,6 +661,7 @@ export default function Items() {
                   readOnly
                   value={form.code}
                   className="glass-input text-sm w-full opacity-60 cursor-not-allowed bg-slate-800/60"
+                  inputMode="text"
                 />
               </div>
 
@@ -642,12 +676,13 @@ export default function Items() {
                   onChange={handleInputChange}
                   placeholder="e.g. Synthetic Engine Oil"
                   className="glass-input text-sm w-full"
+                  inputMode="text"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Price ($) *</label>
+                  <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Price (Rs.) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -658,6 +693,7 @@ export default function Items() {
                     onChange={handleInputChange}
                     placeholder="29.99"
                     className="glass-input text-sm w-full"
+                    inputMode="decimal"
                   />
                 </div>
                 <div className="flex flex-col">
@@ -671,21 +707,22 @@ export default function Items() {
                     onChange={handleInputChange}
                     placeholder="10"
                     className="glass-input text-sm w-full"
+                    inputMode="numeric"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => { setShowItemForm(false); setEditingItem(null); }}
-                  className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-lg hover:bg-slate-800/40 transition-colors"
+                  className="flex-1 min-h-[48px] text-sm text-slate-400 hover:text-slate-200 border border-slate-700/50 rounded-xl hover:bg-slate-800/40 transition-colors active:scale-95 touch-manipulation"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shadow-lg flex items-center gap-1.5 transition-colors"
+                  className="flex-1 min-h-[48px] text-sm bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg flex items-center justify-center gap-1.5 transition-colors active:scale-95 touch-manipulation"
                 >
                   <Check size={14} />
                   Save

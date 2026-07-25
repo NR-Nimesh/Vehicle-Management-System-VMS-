@@ -15,6 +15,10 @@
 }
 
 @layer base {
+  html, body {
+    overflow-x: hidden;
+    touch-action: manipulation;
+  }
   body {
     @apply bg-slate-900 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white;
     background-image: 
@@ -23,6 +27,7 @@
       radial-gradient(at 100% 0%, rgba(30, 41, 59, 0.5) 0px, transparent 50%);
     background-attachment: fixed;
     min-height: 100vh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 }
 
@@ -50,7 +55,7 @@
 }
 
 .glass-input {
-  @apply bg-slate-950/40 border border-slate-700/60 rounded-lg py-2.5 pl-3 pr-3 min-h-[42px] w-full focus:outline-none focus:ring-2 focus:ring-indigo-500/55 focus:border-indigo-500/55 transition-all text-slate-100 placeholder-slate-500;
+  @apply bg-slate-950/40 border border-slate-700/60 rounded-lg py-3 pl-3 pr-3 min-h-[48px] w-full focus:outline-none focus:ring-2 focus:ring-indigo-500/55 focus:border-indigo-500/55 transition-all text-base text-slate-100 placeholder-slate-500;
 }
 
 /* Icon-adorned inputs — icons sit in gutters; text never runs underneath */

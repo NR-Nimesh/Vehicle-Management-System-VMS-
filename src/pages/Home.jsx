@@ -132,10 +132,7 @@ export default function Home() {
 
       {/* Grid Dashboard Cards - Required: grid-template-columns: repeat(2, 1fr) */}
       <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">WORKSPACE PAGES</h3>
-      <div 
-        className="grid gap-6" 
-        style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Card 1: Billing Page */}
         <div 
           onClick={handleCreateBillClick}
