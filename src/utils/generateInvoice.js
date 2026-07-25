@@ -194,7 +194,7 @@ export const generateInvoicePDF = (bill, businessProfile = null) => {
   doc.text('Pending Amount:', labelX, currentY);
   doc.setTextColor(...darkColor);
   const pending = Number(bill.pendingAmount || 0);
-  doc.text(`+Rs. ${pending.toFixed(2)}`, valueX, currentY, { align: 'right' });
+  doc.text(`-Rs. ${pending.toFixed(2)}`, valueX, currentY, { align: 'right' });
 
   currentY += 8;
   doc.setDrawColor(...primaryColor);
@@ -204,7 +204,7 @@ export const generateInvoicePDF = (bill, businessProfile = null) => {
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(...primaryColor);
-  doc.text('Total:', labelX, currentY);
+  doc.text('Paid Amount:', labelX, currentY);
   doc.text(`Rs. ${Number(bill.total).toFixed(2)}`, valueX, currentY, { align: 'right' });
 
   // Footer Message

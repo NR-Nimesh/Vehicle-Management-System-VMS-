@@ -298,7 +298,7 @@ export default function Billing() {
   const taxVal = parseFloat(tax) || 0;
   const discountVal = parseFloat(discount) || 0;
   const pendingVal = parseFloat(pendingAmount) || 0;
-  const finalTotal = subtotal + taxVal - discountVal + pendingVal;
+  const finalTotal = subtotal + taxVal - discountVal - pendingVal;
 
   // ── Photo upload (ImgBB) ──────────────────────────────────────────────────
   const handlePhotoUpload = async (e) => {
@@ -948,12 +948,12 @@ export default function Billing() {
                   )}
                   {pendingVal > 0 && (
                     <div className="flex justify-between text-xs text-amber-400/80">
-                      <span>+ Pending Amount</span>
+                      <span>− Pending Amount</span>
                       <span>Rs. {pendingVal.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="border-t border-slate-700/50 pt-2 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-slate-300">Total</span>
+                    <span className="text-sm font-semibold text-slate-300">Paid Amount</span>
                     <span className="text-2xl font-extrabold text-indigo-400">Rs. {finalTotal.toFixed(2)}</span>
                   </div>
                 </div>

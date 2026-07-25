@@ -215,7 +215,7 @@ export default function BillHistory() {
                     </h4>
                     <div className="flex flex-wrap gap-6 text-sm">
                       <div className="space-y-1">
-                        <p className="text-slate-400 text-xs">Total Amount</p>
+                        <p className="text-slate-400 text-xs">Paid Amount</p>
                         <p className="font-bold text-slate-200">Rs. {Number(selectedDetailBill.total || 0).toFixed(2)}</p>
                       </div>
                       <div className="space-y-1">

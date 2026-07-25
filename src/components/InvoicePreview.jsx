@@ -120,11 +120,11 @@ const InvoicePreview = forwardRef(({ bill, businessProfile = null }, ref) => {
             <span className="text-emerald-600">-Rs. {Number(bill.discount || 0).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-slate-500">
-            <span>Pending Amount (added):</span>
-            <span className="text-amber-600">+Rs. {Number(bill.pendingAmount || 0).toFixed(2)}</span>
+            <span>Pending Amount (deducted):</span>
+            <span className="text-amber-600">-Rs. {Number(bill.pendingAmount || 0).toFixed(2)}</span>
           </div>
           <div className="flex justify-between border-t border-slate-200 pt-3 text-sm font-bold text-slate-900">
-            <span>Total:</span>
+            <span>Paid Amount:</span>
             <span className="text-indigo-600 text-base font-extrabold">Rs. {Number(bill.total || 0).toFixed(2)}</span>
           </div>
         </div>
