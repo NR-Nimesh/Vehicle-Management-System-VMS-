@@ -187,6 +187,15 @@ export const generateInvoicePDF = (bill, businessProfile = null) => {
   doc.setTextColor(...darkColor);
   doc.text(`-Rs. ${Number(bill.discount).toFixed(2)}`, valueX, currentY, { align: 'right' });
 
+  currentY += 6;
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(...grayColor);
+  doc.text('Pending Amount:', labelX, currentY);
+  doc.setTextColor(...darkColor);
+  const pending = Number(bill.pendingAmount || 0);
+  doc.text(`+Rs. ${pending.toFixed(2)}`, valueX, currentY, { align: 'right' });
+
   currentY += 8;
   doc.setDrawColor(...primaryColor);
   doc.setLineWidth(0.4);
@@ -197,26 +206,6 @@ export const generateInvoicePDF = (bill, businessProfile = null) => {
   doc.setTextColor(...primaryColor);
   doc.text('Total:', labelX, currentY);
   doc.text(`Rs. ${Number(bill.total).toFixed(2)}`, valueX, currentY, { align: 'right' });
-
-  currentY += 6;
-  doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(9.5);
-  doc.setTextColor(...grayColor);
-  doc.text('Paid Amount:', labelX, currentY);
-  doc.setTextColor(...darkColor);
-  doc.text(`Rs. ${Number(bill.paidAmount || 0).toFixed(2)}`, valueX, currentY, { align: 'right' });
-
-  currentY += 6;
-  doc.setFont('Helvetica', 'bold');
-  doc.setTextColor(...grayColor);
-  doc.text('Pending Amount:', labelX, currentY);
-  const pending = Number(bill.pendingAmount || 0);
-  if (pending > 0) {
-    doc.setTextColor(245, 158, 11); // Amber for pending
-  } else {
-    doc.setTextColor(16, 185, 129); // Emerald for paid
-  }
-  doc.text(`Rs. ${pending.toFixed(2)}`, valueX, currentY, { align: 'right' });
 
   // Footer Message
   const pageHeight = 297;

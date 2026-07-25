@@ -219,10 +219,6 @@ export default function BillHistory() {
                         <p className="font-bold text-slate-200">Rs. {Number(selectedDetailBill.total || 0).toFixed(2)}</p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-slate-400 text-xs">Paid Amount</p>
-                        <p className="font-bold text-indigo-400">Rs. {Number(selectedDetailBill.paidAmount || 0).toFixed(2)}</p>
-                      </div>
-                      <div className="space-y-1">
                         <p className="text-slate-400 text-xs">Pending Amount</p>
                         <p className={`font-bold ${Number(selectedDetailBill.pendingAmount || 0) > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
                           Rs. {Number(selectedDetailBill.pendingAmount || 0).toFixed(2)}

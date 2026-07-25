@@ -60,7 +60,7 @@ export default function Billing() {
   const [services, setServices] = useState([{ ...DEFAULT_SERVICE }]);
   const [tax, setTax] = useState('');
   const [discount, setDiscount] = useState('');
-  const [paidAmount, setPaidAmount] = useState('');
+  const [pendingAmount, setPendingAmount] = useState('');
 
   // UI states
   const [notification, setNotification] = useState({ type: '', message: '' });
@@ -109,13 +109,13 @@ export default function Billing() {
     const draft = {
       date, invoiceNumber, vehicleNumber, vehicleModel, vehicleDescription,
       customerName, customerEmail, customerPhone,
-      services, tax, discount, paidAmount
+      services, tax, discount, pendingAmount
       // vehiclePhoto intentionally excluded — ImgBB URLs are not stored in localStorage
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
   }, [date, invoiceNumber, vehicleNumber, vehicleModel, vehicleDescription,
       customerName, customerEmail, customerPhone,
-      services, tax, discount, paidAmount, currentEditBill]);
+      services, tax, discount, pendingAmount, currentEditBill]);
 
   // Load data once on mount
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function Billing() {
       }
       setTax(currentEditBill.tax || '');
       setDiscount(currentEditBill.discount || '');
-      setPaidAmount(currentEditBill.paidAmount || '');
+      setPendingAmount(currentEditBill.pendingAmount || '');
     } else {
       const savedDraft = localStorage.getItem(DRAFT_KEY);
       if (savedDraft) {
@@ -162,7 +162,7 @@ export default function Billing() {
             : [{ ...DEFAULT_SERVICE }]);
           setTax(draft.tax || '');
           setDiscount(draft.discount || '');
-          setPaidAmount(draft.paidAmount || '');
+          setPendingAmount(draft.pendingAmount || '');
         } catch {
           localStorage.removeItem(DRAFT_KEY);
           setInvoiceNumber(getNextInvoiceNumber());
@@ -297,9 +297,8 @@ export default function Billing() {
   const subtotal = services.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
   const taxVal = parseFloat(tax) || 0;
   const discountVal = parseFloat(discount) || 0;
-  const finalTotal = subtotal + taxVal - discountVal;
-  const paidVal = parseFloat(paidAmount) || 0;
-  const pendingVal = finalTotal - paidVal;
+  const pendingVal = parseFloat(pendingAmount) || 0;
+  const finalTotal = subtotal + taxVal - discountVal + pendingVal;
 
   // ── Photo upload (ImgBB) ──────────────────────────────────────────────────
   const handlePhotoUpload = async (e) => {
@@ -349,7 +348,7 @@ export default function Billing() {
       tax: taxVal,
       discount: discountVal,
       total: finalTotal,
-      paidAmount: paidVal,
+      paidAmount: 0,
       pendingAmount: pendingVal
     };
   };
@@ -435,7 +434,7 @@ export default function Billing() {
     setServices([{ ...DEFAULT_SERVICE }]);
     setTax('');
     setDiscount('');
-    setPaidAmount('');
+    setPendingAmount('');
   };
 
   const showNotification = (type, message) => {
@@ -841,24 +840,24 @@ export default function Billing() {
                     </div>
                   </div>
 
-                  <div className="max-h-48 overflow-y-auto border border-slate-700/50 rounded-lg bg-slate-950/30 custom-scrollbar">
-                    <table className="w-full text-xs">
-                      <thead className="sticky top-0 bg-slate-800 text-slate-400">
+                  <div className="max-h-64 overflow-y-auto border border-slate-700/50 rounded-lg bg-slate-950/30 custom-scrollbar">
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 bg-slate-800 text-slate-300">
                         <tr>
-                          <th className="text-left py-2 px-3 font-semibold">Code</th>
-                          <th className="text-left py-2 px-3 font-semibold">Name</th>
-                          <th className="text-right py-2 px-3 font-semibold">Price (Rs.)</th>
-                          <th className="text-right py-2 px-3 font-semibold">Stock</th>
+                          <th className="text-left py-3 px-4 font-semibold">Code</th>
+                          <th className="text-left py-3 px-4 font-semibold">Name</th>
+                          <th className="text-right py-3 px-4 font-semibold">Price (Rs.)</th>
+                          <th className="text-right py-3 px-4 font-semibold">Stock</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/50">
                         {filteredItems.length > 0 ? (
                           filteredItems.map(item => (
                             <tr key={item.id} onClick={() => handleAddItemToBill(item)} className="hover:bg-slate-800/20 transition-colors cursor-pointer" title="Click to add to bill">
-                              <td className="py-2 px-3 text-slate-400 font-mono">{item.code || '-'}</td>
-                              <td className="py-2 px-3 text-slate-300">{item.name}</td>
-                              <td className="py-2 px-3 text-right text-indigo-300 font-medium">{parseFloat(item.price || 0).toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right">
+                              <td className="py-3 px-4 text-slate-400 font-mono">{item.code || '-'}</td>
+                              <td className="py-3 px-4 text-slate-300">{item.name}</td>
+                              <td className="py-3 px-4 text-right text-indigo-300 font-medium">{parseFloat(item.price || 0).toFixed(2)}</td>
+                              <td className="py-3 px-4 text-right">
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
                                   item.stock > 10 ? 'bg-emerald-500/10 text-emerald-400' :
                                   item.stock > 0 ? 'bg-amber-500/10 text-amber-400' :
@@ -914,17 +913,17 @@ export default function Billing() {
                     />
                   </div>
                   <div className="flex flex-col col-span-2">
-                    <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Paid Amount (Rs.)</label>
+                    <label className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Pending Amount (Rs.)</label>
                     <InputWithIcon
                       type="number"
                       icon={DollarSign}
                       iconSize={14}
                       step="0.01"
                       min="0"
-                      value={paidAmount}
-                      onChange={(e) => setPaidAmount(e.target.value)}
+                      value={pendingAmount}
+                      onChange={(e) => setPendingAmount(e.target.value)}
                       placeholder="0.00"
-                      className="text-indigo-400"
+                      className="text-amber-400"
                     />
                   </div>
                 </div>
@@ -947,19 +946,15 @@ export default function Billing() {
                       <span>Rs. {discountVal.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="border-t border-slate-700/50 pt-2 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-slate-300">Total</span>
-                    <span className="text-2xl font-extrabold text-indigo-400">Rs. {finalTotal.toFixed(2)}</span>
-                  </div>
-                  {paidVal > 0 && (
-                    <div className="flex justify-between text-xs text-indigo-300/80">
-                      <span>− Paid Amount</span>
-                      <span>Rs. {paidVal.toFixed(2)}</span>
+                  {pendingVal > 0 && (
+                    <div className="flex justify-between text-xs text-amber-400/80">
+                      <span>+ Pending Amount</span>
+                      <span>Rs. {pendingVal.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="border-t border-slate-700/50 pt-2 flex justify-between items-center">
-                    <span className="text-sm font-semibold text-slate-300">Pending Amount</span>
-                    <span className={`text-lg font-bold ${pendingVal > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>Rs. {pendingVal.toFixed(2)}</span>
+                    <span className="text-sm font-semibold text-slate-300">Total</span>
+                    <span className="text-2xl font-extrabold text-indigo-400">Rs. {finalTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
