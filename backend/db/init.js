@@ -47,14 +47,12 @@ const getStatements = (dbName) => [
   )`,
   `CREATE TABLE IF NOT EXISTS service_charge_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    item_id INT NOT NULL,
     service_index INT NOT NULL,
     service_type VARCHAR(255) DEFAULT '',
     price DECIMAL(10,2) DEFAULT 0.00,
     green_count INT DEFAULT 0,
     red_count INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
   `CREATE TABLE IF NOT EXISTS business_profile (
     id INT PRIMARY KEY,
@@ -119,7 +117,11 @@ const migrations = [
   // Add status column to categories for soft-delete approval workflow
   `ALTER TABLE categories ADD COLUMN status ENUM('active','pending_deletion') NOT NULL DEFAULT 'active'`,
   // Ensure all existing categories are marked active
-  `UPDATE categories SET status = 'active' WHERE status IS NULL OR status = ''`
+  `UPDATE categories SET status = 'active' WHERE status IS NULL OR status = ''`,
+  // Make service_charge_history global
+  `ALTER TABLE service_charge_history DROP FOREIGN KEY service_charge_history_ibfk_1`,
+  `ALTER TABLE service_charge_history DROP FOREIGN KEY fk_1`,
+  `ALTER TABLE service_charge_history DROP COLUMN item_id`
 
 ];
 

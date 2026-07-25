@@ -22,10 +22,6 @@ export default function Items() {
   // 2-level view state
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  // Service Charge section state — item selector below Deletion Requests
-  const [serviceChargeItem, setServiceChargeItem] = useState(null);
-  const [itemSelectorSearch, setItemSelectorSearch] = useState('');
-  const [showItemDropdown, setShowItemDropdown] = useState(false);
 
   // Category modal state
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -179,7 +175,6 @@ export default function Items() {
     try {
       await apiRequest(`/items/${id}`, { method: 'DELETE' });
       setItems(prev => prev.filter(item => item.id !== id));
-      if (serviceChargeItem?.id === id) setServiceChargeItem(null);
     } catch (err) {
       console.error('Failed to delete item:', err);
     }
@@ -201,7 +196,6 @@ export default function Items() {
           body: JSON.stringify(payload)
         });
         setItems(prev => prev.map(item => item.id === editingItem.id ? updated : item));
-        if (serviceChargeItem?.id === editingItem.id) setServiceChargeItem(updated);
       } else {
         const newItem = await apiRequest('/items', {
           method: 'POST',
@@ -234,12 +228,6 @@ export default function Items() {
   const filteredItems = currentCategoryItems.filter(item =>
     (item.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (item.code || '').toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Items filtered for the service charge item selector dropdown
-  const filteredSelectorItems = items.filter(item =>
-    (item.name || '').toLowerCase().includes(itemSelectorSearch.toLowerCase()) ||
-    (item.code || '').toLowerCase().includes(itemSelectorSearch.toLowerCase())
   );
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -421,123 +409,7 @@ export default function Items() {
 
           {/* ── SERVICE CHARGE HISTORY (below Deletion Requests) ─────────────── */}
           <div className="mt-10 animate-fadeIn">
-            {/* Section Header */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-                <ClipboardList size={18} className="text-indigo-400" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-200">Service Charge History</h2>
-                <p className="text-slate-500 text-xs mt-0.5">
-                  Select an inventory item to view and manage its service charge records.
-                </p>
-              </div>
-            </div>
-
-            {/* Item Selector */}
-            <div className="glass-panel p-5 border-indigo-500/10">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">
-                Select Item
-              </label>
-              <div className="relative">
-                {/* Trigger button */}
-                <button
-                  onClick={() => setShowItemDropdown(prev => !prev)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-800/60 border border-slate-700 hover:border-indigo-500/50 rounded-xl text-sm transition-all focus:outline-none focus:border-indigo-500"
-                >
-                  {serviceChargeItem ? (
-                    <span className="flex items-center gap-3 text-slate-200">
-                      <span className="font-mono text-indigo-400 text-xs px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded">
-                        {serviceChargeItem.code}
-                      </span>
-                      <span className="font-medium">{serviceChargeItem.name}</span>
-                      <span className="text-slate-500 text-xs">({serviceChargeItem.category})</span>
-                    </span>
-                  ) : (
-                    <span className="text-slate-500">— Choose an item to view service history —</span>
-                  )}
-                  <ChevronDown size={16} className={`text-slate-400 transition-transform shrink-0 ${showItemDropdown ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Dropdown */}
-                {showItemDropdown && (
-                  <div className="absolute z-30 top-full mt-2 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-2xl shadow-black/40 overflow-hidden">
-                    {/* Search input inside dropdown */}
-                    <div className="p-3 border-b border-slate-800">
-                      <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                        <input
-                          autoFocus
-                          type="text"
-                          value={itemSelectorSearch}
-                          onChange={(e) => setItemSelectorSearch(e.target.value)}
-                          placeholder="Search items..."
-                          className="w-full pl-8 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Item list */}
-                    <div className="max-h-64 overflow-y-auto">
-                      {filteredSelectorItems.length === 0 ? (
-                        <div className="py-6 text-center text-slate-500 text-sm">No items found.</div>
-                      ) : (
-                        filteredSelectorItems.map(item => (
-                          <button
-                            key={item.id}
-                            onClick={() => {
-                              setServiceChargeItem(item);
-                              setShowItemDropdown(false);
-                              setItemSelectorSearch('');
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-800/60 transition-colors ${serviceChargeItem?.id === item.id ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : ''}`}
-                          >
-                            <span className="font-mono text-indigo-400 text-xs px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded shrink-0">
-                              {item.code}
-                            </span>
-                            <span className="font-medium text-slate-200 flex-1 truncate">{item.name}</span>
-                            <span className="text-slate-500 text-xs shrink-0">{item.category}</span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Clear selection */}
-                    {serviceChargeItem && (
-                      <div className="p-2 border-t border-slate-800">
-                        <button
-                          onClick={() => {
-                            setServiceChargeItem(null);
-                            setShowItemDropdown(false);
-                          }}
-                          className="w-full text-xs text-slate-500 hover:text-rose-400 py-1.5 transition-colors"
-                        >
-                          Clear selection
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Close dropdown overlay when clicking outside */}
-              {showItemDropdown && (
-                <div
-                  className="fixed inset-0 z-20"
-                  onClick={() => { setShowItemDropdown(false); setItemSelectorSearch(''); }}
-                />
-              )}
-            </div>
-
-            {/* Service Charge History Table — only when item selected */}
-            {serviceChargeItem ? (
-              <ServiceChargeHistoryTable itemId={serviceChargeItem.id} />
-            ) : (
-              <div className="mt-4 py-12 flex flex-col items-center gap-3 text-slate-600 border border-dashed border-slate-800 rounded-xl bg-slate-900/20">
-                <ClipboardList size={36} className="opacity-30" />
-                <p className="text-sm">Select an item above to view its service charge history.</p>
-              </div>
-            )}
+            <ServiceChargeHistoryTable />
           </div>
         </>
       )}

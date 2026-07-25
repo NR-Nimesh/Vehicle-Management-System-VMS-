@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ThumbsUp, ThumbsDown, Plus, Trash2, Loader2 } from 'lucide-react';
 import { apiRequest } from '../utils/api';
 
-export default function ServiceChargeHistoryTable({ itemId }) {
+export default function ServiceChargeHistoryTable() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,11 +11,14 @@ export default function ServiceChargeHistoryTable({ itemId }) {
   // Format: { id: rowId, type: 'green' | 'red' }
   const [editingFeedback, setEditingFeedback] = useState(null);
 
+  const debounceTimers = useRef({});
+  const clickTimers = useRef({});
+
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         setLoading(true);
-        const data = await apiRequest(`/items/${itemId}/service-charges`);
+        const data = await apiRequest('/service-charges');
         setHistory(data);
       } catch (err) {
         setError('Failed to load service charge history');
@@ -23,12 +26,12 @@ export default function ServiceChargeHistoryTable({ itemId }) {
         setLoading(false);
       }
     };
-    if (itemId) fetchHistory();
-  }, [itemId]);
+    fetchHistory();
+  }, []);
 
   const handleAddRow = async () => {
     try {
-      const newRow = await apiRequest(`/items/${itemId}/service-charges`, { method: 'POST' });
+      const newRow = await apiRequest('/service-charges', { method: 'POST' });
       setHistory(prev => [...prev, newRow]);
     } catch (err) {
       console.error('Failed to add row:', err);
@@ -57,26 +60,49 @@ export default function ServiceChargeHistoryTable({ itemId }) {
       });
     } catch (err) {
       console.error('Failed to save updates:', err);
-      // In a robust app, we might revert the optimistic update here.
     }
   };
 
   const handleInputChange = (id, field, value) => {
     updateRowInState(id, { [field]: value });
+
+    const timerId = `${id}-${field}`;
+    if (debounceTimers.current[timerId]) {
+      clearTimeout(debounceTimers.current[timerId]);
+    }
+
+    debounceTimers.current[timerId] = setTimeout(() => {
+      saveUpdates(id, { [field]: value });
+      delete debounceTimers.current[timerId];
+    }, 400);
   };
 
   const handleInputBlur = (id, field, value) => {
+    const timerId = `${id}-${field}`;
+    if (debounceTimers.current[timerId]) {
+      clearTimeout(debounceTimers.current[timerId]);
+      delete debounceTimers.current[timerId];
+    }
     saveUpdates(id, { [field]: value });
   };
 
-  const incrementCount = (id, type, currentValue) => {
-    // If we're editing the number manually, don't increment on click
+  const handleFeedbackClick = (id, type, currentValue) => {
     if (editingFeedback && editingFeedback.id === id && editingFeedback.type === type) return;
-    
-    const field = type === 'green' ? 'green_count' : 'red_count';
-    const newValue = (parseInt(currentValue, 10) || 0) + 1;
-    updateRowInState(id, { [field]: newValue });
-    saveUpdates(id, { [field]: newValue });
+
+    const timerId = `${id}-${type}`;
+    if (clickTimers.current[timerId]) {
+      clearTimeout(clickTimers.current[timerId]);
+      delete clickTimers.current[timerId];
+      setEditingFeedback({ id, type });
+    } else {
+      clickTimers.current[timerId] = setTimeout(() => {
+        const field = type === 'green' ? 'green_count' : 'red_count';
+        const newValue = (parseInt(currentValue, 10) || 0) + 1;
+        updateRowInState(id, { [field]: newValue });
+        saveUpdates(id, { [field]: newValue });
+        delete clickTimers.current[timerId];
+      }, 250);
+    }
   };
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-indigo-500" /></div>;
@@ -158,9 +184,8 @@ export default function ServiceChargeHistoryTable({ itemId }) {
                           {/* Green Button */}
                           <div 
                             className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 rounded-lg text-emerald-400 transition-all cursor-pointer select-none"
-                            onClick={() => incrementCount(row.id, 'green', row.green_count)}
-                            onDoubleClick={() => setEditingFeedback({ id: row.id, type: 'green' })}
-                            title="Positive Feedback (Double-click to manually edit)"
+                            onClick={() => handleFeedbackClick(row.id, 'green', row.green_count)}
+                            title="Positive Feedback (Click to increment, double-click or click number to manually edit)"
                           >
                             <ThumbsUp size={14} />
                             {editingFeedback?.id === row.id && editingFeedback?.type === 'green' ? (
@@ -168,25 +193,33 @@ export default function ServiceChargeHistoryTable({ itemId }) {
                                 type="number"
                                 autoFocus
                                 className="w-12 bg-emerald-900/50 text-emerald-300 outline-none text-center rounded px-1 -mx-1"
-                                value={row.green_count || 0}
+                                value={row.green_count !== null ? row.green_count : ''}
                                 onChange={(e) => handleInputChange(row.id, 'green_count', e.target.value)}
                                 onBlur={(e) => {
                                   handleInputBlur(row.id, 'green_count', e.target.value);
                                   setEditingFeedback(null);
                                 }}
                                 onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+                                onClick={(e) => e.stopPropagation()}
                               />
                             ) : (
-                              <span className="font-bold min-w-[1.25rem] text-center">{row.green_count || 0}</span>
+                              <span 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingFeedback({ id: row.id, type: 'green' });
+                                }}
+                                className="font-bold min-w-[1.25rem] text-center"
+                              >
+                                {row.green_count || 0}
+                              </span>
                             )}
                           </div>
 
                           {/* Red Button */}
                           <div 
                             className="flex items-center gap-1.5 px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/40 rounded-lg text-rose-400 transition-all cursor-pointer select-none"
-                            onClick={() => incrementCount(row.id, 'red', row.red_count)}
-                            onDoubleClick={() => setEditingFeedback({ id: row.id, type: 'red' })}
-                            title="Negative Feedback (Double-click to manually edit)"
+                            onClick={() => handleFeedbackClick(row.id, 'red', row.red_count)}
+                            title="Negative Feedback (Click to increment, double-click or click number to manually edit)"
                           >
                             <ThumbsDown size={14} />
                             {editingFeedback?.id === row.id && editingFeedback?.type === 'red' ? (
@@ -194,16 +227,25 @@ export default function ServiceChargeHistoryTable({ itemId }) {
                                 type="number"
                                 autoFocus
                                 className="w-12 bg-rose-900/50 text-rose-300 outline-none text-center rounded px-1 -mx-1"
-                                value={row.red_count || 0}
+                                value={row.red_count !== null ? row.red_count : ''}
                                 onChange={(e) => handleInputChange(row.id, 'red_count', e.target.value)}
                                 onBlur={(e) => {
                                   handleInputBlur(row.id, 'red_count', e.target.value);
                                   setEditingFeedback(null);
                                 }}
                                 onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+                                onClick={(e) => e.stopPropagation()}
                               />
                             ) : (
-                              <span className="font-bold min-w-[1.25rem] text-center">{row.red_count || 0}</span>
+                              <span 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingFeedback({ id: row.id, type: 'red' });
+                                }}
+                                className="font-bold min-w-[1.25rem] text-center"
+                              >
+                                {row.red_count || 0}
+                              </span>
                             )}
                           </div>
                         </div>

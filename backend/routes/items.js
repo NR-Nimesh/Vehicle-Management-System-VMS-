@@ -24,36 +24,6 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// Get service charges for an item
-router.get('/:itemId/service-charges', async (req, res, next) => {
-  const { itemId } = req.params;
-  try {
-    const [rows] = await pool.query('SELECT * FROM service_charge_history WHERE item_id = ? ORDER BY service_index ASC', [itemId]);
-    res.json(rows);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Add a new service charge for an item
-router.post('/:itemId/service-charges', async (req, res, next) => {
-  const { itemId } = req.params;
-  try {
-    // Get the next index for this item
-    const [indexRows] = await pool.query('SELECT MAX(service_index) as maxIndex FROM service_charge_history WHERE item_id = ?', [itemId]);
-    const nextIndex = (indexRows[0].maxIndex || 0) + 1;
-    
-    const [result] = await pool.query(
-      'INSERT INTO service_charge_history (item_id, service_index) VALUES (?, ?)',
-      [itemId, nextIndex]
-    );
-    const [rows] = await pool.query('SELECT * FROM service_charge_history WHERE id = ?', [result.insertId]);
-    res.status(201).json(rows[0]);
-  } catch (err) {
-    next(err);
-  }
-});
-
 // Create item
 router.post('/', async (req, res, next) => {
   const { code, name, category, price, stock } = req.body;
