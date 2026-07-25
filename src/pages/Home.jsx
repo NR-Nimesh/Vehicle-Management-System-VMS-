@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBilling } from '../context/BillingContext';
+import CashBookModal from '../components/CashBookModal';
+import GrowthChartModal from '../components/GrowthChartModal';
 import { 
   FileText, History, Package, Briefcase, Plus, 
-  TrendingUp, ClipboardList, ShieldAlert, Award, Car 
+  TrendingUp, ClipboardList, ShieldAlert, Award, Car, DollarSign, LineChart
 } from 'lucide-react';
 
 export default function Home() {
@@ -16,6 +18,9 @@ export default function Home() {
     uniqueVehicles: 0,
     itemsCount: 0
   });
+
+  const [isCashBookOpen, setIsCashBookOpen] = useState(false);
+  const [isGrowthChartOpen, setIsGrowthChartOpen] = useState(false);
 
   // Calculate live statistics
   useEffect(() => {
@@ -130,99 +135,68 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Grid Dashboard Cards - Required: grid-template-columns: repeat(2, 1fr) */}
+      {/* Grid Dashboard Cards */}
       <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">WORKSPACE PAGES</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {/* Card 1: Billing Page */}
+        
+        {/* Card: Cash Book */}
         <div 
-          onClick={handleCreateBillClick}
+          onClick={() => setIsCashBookOpen(true)}
           className="glass-card p-6 cursor-pointer flex flex-col justify-between group hover:scale-[1.01]"
         >
           <div>
-            <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-indigo-400 w-fit mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-              <FileText size={22} />
+            <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-emerald-400 w-fit mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+              <DollarSign size={22} />
             </div>
-            <h3 className="text-lg font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">
-              Billing Panel
+            <h3 className="text-lg font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">
+              Cash Book
             </h3>
             <p className="text-slate-400 text-xs mt-2 leading-relaxed">
-              Create a new client invoice, upload base64 vehicle photos, calculate service amounts, and print/download receipts immediately.
+              View your business ledger, track cash in from invoices, and record cash out expenses. Automatically calculate net balance.
             </p>
           </div>
-          <div className="mt-6 flex items-center justify-between text-[11px] text-indigo-400 font-semibold group-hover:text-indigo-300">
-            <span>Launch Billing Console</span>
+          <div className="mt-6 flex items-center justify-between text-[11px] text-emerald-400 font-semibold group-hover:text-emerald-300">
+            <span>Open Cash Book Ledger</span>
             <span>&rarr;</span>
           </div>
         </div>
 
-        {/* Card 2: Bill History */}
+        {/* Card: Company Growth Chart */}
         <div 
-          onClick={() => navigate('/history')}
+          onClick={() => setIsGrowthChartOpen(true)}
           className="glass-card p-6 cursor-pointer flex flex-col justify-between group hover:scale-[1.01]"
         >
           <div>
             <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-indigo-400 w-fit mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-              <History size={22} />
+              <LineChart size={22} />
             </div>
             <h3 className="text-lg font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">
-              Billing History
+              Company Growth Chart
             </h3>
             <p className="text-slate-400 text-xs mt-2 leading-relaxed">
-              Browse invoices list. Perform multi-field search filters, sort records, load receipts for editing, or print/download past documents.
+              Visualize business earnings over time. View interactive charts dynamically filtered by daily, monthly, or yearly timelines.
             </p>
           </div>
           <div className="mt-6 flex items-center justify-between text-[11px] text-indigo-400 font-semibold group-hover:text-indigo-300">
-            <span>Open History Archive ({stats.invoiceCount})</span>
+            <span>View Interactive Chart</span>
             <span>&rarr;</span>
           </div>
         </div>
 
-        {/* Card 3: Items Inventory */}
-        <div 
-          onClick={handleAddItemClick}
-          className="glass-card p-6 cursor-pointer flex flex-col justify-between group hover:scale-[1.01]"
-        >
-          <div>
-            <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-indigo-400 w-fit mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-              <Package size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">
-              Items
-            </h3>
-            <p className="text-slate-400 text-xs mt-2 leading-relaxed">
-              Maintain spare parts inventory listings. Adjust pricing schemas, track parts availability, or log additions/modifications.
-            </p>
-          </div>
-          <div className="mt-6 flex items-center justify-between text-[11px] text-indigo-400 font-semibold group-hover:text-indigo-300">
-            <span>Open Parts Directory ({stats.itemsCount})</span>
-            <span>&rarr;</span>
-          </div>
-        </div>
-
-        {/* Card 4: Business Profile */}
-        <div 
-          onClick={() => navigate('/business-profile')}
-          className="glass-card p-6 cursor-pointer flex flex-col justify-between group hover:scale-[1.01]"
-        >
-          <div>
-            <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-indigo-400 w-fit mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-              <Briefcase size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">
-              Business Profile
-            </h3>
-            <p className="text-slate-400 text-xs mt-2 leading-relaxed">
-              Configure default company information, upload base64 corporate logos, record email/phone metadata, and list tax IDs.
-            </p>
-          </div>
-          <div className="mt-6 flex items-center justify-between text-[11px] text-indigo-400 font-semibold group-hover:text-indigo-300">
-            <span className="truncate max-w-[200px]">
-              {businessProfile.name ? `Profile: ${businessProfile.name}` : 'Setup Profile Defaults'}
-            </span>
-            <span>&rarr;</span>
-          </div>
-        </div>
       </div>
+
+      {/* Modals */}
+      <CashBookModal 
+        isOpen={isCashBookOpen} 
+        onClose={() => setIsCashBookOpen(false)} 
+        bills={bills}
+      />
+      
+      <GrowthChartModal
+        isOpen={isGrowthChartOpen}
+        onClose={() => setIsGrowthChartOpen(false)}
+        bills={bills}
+      />
     </div>
   );
 }
