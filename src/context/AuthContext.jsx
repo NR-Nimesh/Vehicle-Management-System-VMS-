@@ -11,6 +11,16 @@ export const useAuth = () => {
   return context;
 };
 
+// Decode JWT payload without verifying signature (for expiry check only)
+const getTokenExpiry = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp ? payload.exp * 1000 : null; // convert to ms
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +31,14 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user');
 
     if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
+      const expiry = getTokenExpiry(token);
+      if (expiry && Date.now() >= expiry) {
+        // Token has expired — clear storage and force re-login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } else {
+        setUser(JSON.parse(storedUser));
+      }
     }
     setLoading(false);
   }, []);

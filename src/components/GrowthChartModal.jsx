@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { X, TrendingUp, ChevronLeft, ChevronRight, CalendarClock, Info } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
 
@@ -24,7 +24,7 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
       bills.forEach(bill => {
         const amount = parseFloat(bill.total) || 0;
         if (amount <= 0) return;
-        
+
         const date = new Date(bill.created_at || bill.date);
         let key = '';
 
@@ -40,7 +40,7 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
     }
 
     const finalData = [];
-    
+
     if (timeframe === 'daily') {
       // Last 30 days
       for (let i = 29; i >= 0; i--) {
@@ -72,21 +72,21 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
   const updateVisibleRange = () => {
     if (!scrollContainerRef.current || chartData.length === 0) return;
     const el = scrollContainerRef.current;
-    
+
     const scrollPercentStart = el.scrollLeft / el.scrollWidth;
     const scrollPercentEnd = (el.scrollLeft + el.clientWidth) / el.scrollWidth;
-    
+
     let startIndex = Math.floor(scrollPercentStart * chartData.length);
     let endIndex = Math.floor(scrollPercentEnd * chartData.length) - 1;
-    
+
     // Bounds checking
     if (startIndex < 0) startIndex = 0;
     if (endIndex >= chartData.length) endIndex = chartData.length - 1;
     if (startIndex > endIndex) startIndex = endIndex;
-    
+
     const startData = chartData[startIndex];
     const endData = chartData[endIndex];
-    
+
     if (startData && endData) {
       if (startData.time === endData.time) {
         setVisibleRange(startData.time);
@@ -188,9 +188,9 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
           background: #651fff;
         }
       `}</style>
-      
+
       <div className="glass-panel w-full max-w-6xl shadow-2xl border-slate-700 bg-slate-900 rounded-2xl flex flex-col p-6 h-[85vh]">
-        
+
         {/* Header & Controls */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
           <div>
@@ -199,7 +199,7 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
             </h2>
             <p className="text-sm text-slate-400 mt-1">Interactive overview of company earnings and revenue.</p>
           </div>
-          
+
           <div className="flex items-center gap-6">
             {/* View Toggle Buttons */}
             <div className="flex bg-[#0B1220] rounded-full p-1 border border-slate-800 shadow-inner">
@@ -222,8 +222,8 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
                 Yearly
               </button>
             </div>
-            
-            <button 
+
+            <button
               onClick={onClose}
               className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-rose-500/20 hover:text-rose-400 transition-colors border border-transparent hover:border-rose-500/50"
             >
@@ -234,13 +234,13 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
 
         {/* Navigation Row */}
         <div className="flex items-center justify-center gap-4 mb-4 bg-slate-950/40 py-2 px-4 rounded-xl border border-slate-800/50">
-          <button 
+          <button
             onClick={() => scrollByAmount('left')}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors shadow-sm"
           >
             <ChevronLeft size={18} />
           </button>
-          
+
           <div className="flex flex-col items-center min-w-[250px]">
             <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">Visible Range</span>
             <span className="text-sm font-semibold text-slate-200 bg-slate-900 px-3 py-1 rounded-md border border-slate-800 shadow-inner">
@@ -248,7 +248,7 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
             </span>
           </div>
 
-          <button 
+          <button
             onClick={() => scrollByAmount('right')}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors shadow-sm"
           >
@@ -257,7 +257,7 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
         </div>
 
         {/* Chart Container (Scrollable) */}
-        <div 
+        <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
           onMouseDown={handleMouseDown}
@@ -272,17 +272,17 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                <XAxis 
-                  dataKey="time" 
-                  stroke="#64748b" 
+                <XAxis
+                  dataKey="time"
+                  stroke="#64748b"
                   fontSize={11}
                   tickLine={false}
                   axisLine={{ stroke: '#334155' }}
                   dy={10}
                   tick={{ fill: '#94a3b8' }}
                 />
-                <YAxis 
-                  stroke="#64748b" 
+                <YAxis
+                  stroke="#64748b"
                   fontSize={11}
                   tickLine={false}
                   axisLine={false}
@@ -290,23 +290,23 @@ export default function GrowthChartModal({ isOpen, onClose, bills }) {
                   dx={-10}
                   tick={{ fill: '#94a3b8' }}
                 />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: '#1e293b', opacity: 0.4 }}
                   contentStyle={{ backgroundColor: '#0B1220', borderColor: '#334155', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
                   itemStyle={{ color: '#7C4DFF', fontWeight: 'bold' }}
                   formatter={(value) => [`Rs. ${value.toFixed(2)}`, 'Earnings']}
                   labelStyle={{ color: '#f8fafc', marginBottom: '8px', fontWeight: 'bold', borderBottom: '1px solid #334155', paddingBottom: '4px' }}
                 />
-                <Bar 
-                  dataKey="earnings" 
+                <Bar
+                  dataKey="earnings"
                   radius={[6, 6, 0, 0]}
                   barSize={timeframe === 'daily' ? 30 : timeframe === 'monthly' ? 40 : 50}
                   animationDuration={1000}
                 >
                   {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.earnings > 0 ? '#7C4DFF' : '#334155'} 
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.earnings > 0 ? '#7C4DFF' : '#334155'}
                       className="hover:opacity-80 transition-opacity duration-300"
                     />
                   ))}

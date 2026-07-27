@@ -16,6 +16,21 @@ async function apiRequest(path, options = {}) {
     ...options
   });
 
+  // If server says token is invalid/expired, auto-logout and redirect to login
+  if (response.status === 401 || response.status === 403) {
+    const text = await response.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = null; }
+    // Only auto-logout for token errors, not for "Admin access required" etc.
+    const isTokenError = data?.error?.toLowerCase().includes('token');
+    if (isTokenError) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.reload(); // Sends back to login screen
+      return;
+    }
+  }
+
   const text = await response.text();
   let data;
   

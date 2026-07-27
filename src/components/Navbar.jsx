@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, FileText, History, Package, Briefcase, Menu, X, Car, Users, LogOut } from 'lucide-react';
+import { Home, FileText, History, Package, Briefcase, Menu, X, Car, Users, LogOut, BookOpen } from 'lucide-react';
 import { useBilling } from '../context/BillingContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -33,6 +33,7 @@ export default function Navbar() {
     { name: 'Bill History', path: '/history', icon: History, roles: ['admin'] },
     { name: 'Items', path: '/items', icon: Package, roles: ['admin', 'user'] },
     { name: 'Business Profile', path: '/business-profile', icon: Briefcase, roles: ['admin'] },
+    { name: 'Cash Book', path: '/cash-book', icon: BookOpen, roles: ['admin'] },
     { name: 'User Management', path: '/users', icon: Users, roles: ['admin'] },
   ];
 

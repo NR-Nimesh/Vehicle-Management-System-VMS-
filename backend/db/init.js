@@ -121,12 +121,27 @@ const migrations = [
   // Make service_charge_history global
   `ALTER TABLE service_charge_history DROP FOREIGN KEY service_charge_history_ibfk_1`,
   `ALTER TABLE service_charge_history DROP FOREIGN KEY fk_1`,
-  `ALTER TABLE service_charge_history DROP COLUMN item_id`
+  `ALTER TABLE service_charge_history DROP COLUMN item_id`,
+  // Expenses table — create if not exists with all new columns
+  `CREATE TABLE IF NOT EXISTS expenses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    category VARCHAR(128),
+    description TEXT,
+    amount DECIMAL(10,2) DEFAULT 0.00,
+    type ENUM('Income','Expense','Transfer','Receivable','Payable') DEFAULT 'Expense',
+    payment_method VARCHAR(64) DEFAULT 'Cash',
+    account VARCHAR(64) DEFAULT 'Main'
+  )`,
+  // Migrate existing expenses table — add new columns if missing
+  `ALTER TABLE expenses ADD COLUMN type ENUM('Income','Expense','Transfer','Receivable','Payable') DEFAULT 'Expense'`,
+  `ALTER TABLE expenses ADD COLUMN payment_method VARCHAR(64) DEFAULT 'Cash'`,
+  `ALTER TABLE expenses ADD COLUMN account VARCHAR(64) DEFAULT 'Main'`
 
 ];
 
 async function initializeDatabase() {
-  const sslOption = IS_REMOTE ? { ssl: { rejectUnauthorized: true } } : {};
+  const sslOption = IS_REMOTE ? { ssl: { rejectUnauthorized: false } } : {};
 
   const connection = await mysql.createConnection({
     host: DB_HOST,

@@ -22,7 +22,10 @@ const pool = mysql.createPool({
 	waitForConnections: true,
 	connectionLimit: 10,
 	queueLimit: 0,
-	...(isRemote ? { ssl: { rejectUnauthorized: true } } : {})
+	connectTimeout: 30000,          // 30s timeout for TiDB Cloud cold-start
+	enableKeepAlive: true,          // Prevent idle connection drops
+	keepAliveInitialDelay: 10000,   // Send keep-alive after 10s idle
+	...(isRemote ? { ssl: { rejectUnauthorized: false } } : {})
 });
 
 module.exports = pool;

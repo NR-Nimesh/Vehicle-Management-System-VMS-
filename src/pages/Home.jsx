@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBilling } from '../context/BillingContext';
-import CashBookModal from '../components/CashBookModal';
 import GrowthChartModal from '../components/GrowthChartModal';
 import { 
   FileText, History, Package, Briefcase, Plus, 
@@ -19,7 +18,6 @@ export default function Home() {
     itemsCount: 0
   });
 
-  const [isCashBookOpen, setIsCashBookOpen] = useState(false);
   const [isGrowthChartOpen, setIsGrowthChartOpen] = useState(false);
 
   // Calculate live statistics
@@ -141,7 +139,7 @@ export default function Home() {
         
         {/* Card: Cash Book */}
         <div 
-          onClick={() => setIsCashBookOpen(true)}
+          onClick={() => navigate('/cash-book')}
           className="glass-card p-6 cursor-pointer flex flex-col justify-between group hover:scale-[1.01]"
         >
           <div>
@@ -186,11 +184,6 @@ export default function Home() {
       </div>
 
       {/* Modals */}
-      <CashBookModal 
-        isOpen={isCashBookOpen} 
-        onClose={() => setIsCashBookOpen(false)} 
-        bills={bills}
-      />
       
       <GrowthChartModal
         isOpen={isGrowthChartOpen}

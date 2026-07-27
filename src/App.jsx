@@ -9,6 +9,7 @@ import Items from './pages/Items';
 import BusinessProfile from './pages/BusinessProfile';
 import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
+import CashBook from './pages/CashBook';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -29,6 +30,7 @@ function App() {
                 <Route path="/items" element={<ProtectedRoute allowedRoles={['admin', 'user']}><Items /></ProtectedRoute>} />
                 <Route path="/business-profile" element={<ProtectedRoute allowedRoles={['admin']}><BusinessProfile /></ProtectedRoute>} />
                 <Route path="/users" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>} />
+                <Route path="/cash-book" element={<ProtectedRoute allowedRoles={['admin']}><CashBook /></ProtectedRoute>} />
               </Routes>
             </main>
           </div>
