@@ -11,6 +11,8 @@ const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const serviceChargesRouter = require('./routes/serviceCharges');
 const expensesRouter = require('./routes/expenses');
+const receivableRouter = require('./routes/receivable');
+const payableRouter = require('./routes/payable');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
@@ -49,6 +51,8 @@ app.use('/api/business-profile', businessProfileRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/service-charges', serviceChargesRouter);
 app.use('/api/expenses', expensesRouter);
+app.use('/api/receivable', receivableRouter);
+app.use('/api/payable', payableRouter);
 
 app.get('/', (req, res) => res.json({ message: 'Vehicle Management System API' }));
 

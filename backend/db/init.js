@@ -136,7 +136,44 @@ const migrations = [
   // Migrate existing expenses table — add new columns if missing
   `ALTER TABLE expenses ADD COLUMN type ENUM('Income','Expense','Transfer','Receivable','Payable') DEFAULT 'Expense'`,
   `ALTER TABLE expenses ADD COLUMN payment_method VARCHAR(64) DEFAULT 'Cash'`,
-  `ALTER TABLE expenses ADD COLUMN account VARCHAR(64) DEFAULT 'Main'`
+  `ALTER TABLE expenses ADD COLUMN account VARCHAR(64) DEFAULT 'Main'`,
+  // Accounts Receivable table
+  `CREATE TABLE IF NOT EXISTS accounts_receivable (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_name VARCHAR(255) NOT NULL,
+    invoice_id INT DEFAULT NULL,
+    invoice_number VARCHAR(64) DEFAULT NULL,
+    amount DECIMAL(10,2) DEFAULT 0.00,
+    paid_amount DECIMAL(10,2) DEFAULT 0.00,
+    remaining_amount DECIMAL(10,2) DEFAULT 0.00,
+    due_date DATE DEFAULT NULL,
+    description TEXT,
+    status ENUM('Pending','Partially Paid','Paid') DEFAULT 'Pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`,
+  // Accounts Payable table
+  `CREATE TABLE IF NOT EXISTS accounts_payable (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    supplier_name VARCHAR(255) NOT NULL,
+    bill_number VARCHAR(64) DEFAULT NULL,
+    amount DECIMAL(10,2) DEFAULT 0.00,
+    paid_amount DECIMAL(10,2) DEFAULT 0.00,
+    remaining_amount DECIMAL(10,2) DEFAULT 0.00,
+    due_date DATE DEFAULT NULL,
+    description TEXT,
+    status ENUM('Pending','Partially Paid','Paid') DEFAULT 'Pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )`,
+  // Cash Book categories table (separate from inventory categories)
+  `CREATE TABLE IF NOT EXISTS cashbook_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    type ENUM('Income','Expense') NOT NULL,
+    icon VARCHAR(64) DEFAULT 'Tag',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`
 
 ];
 
@@ -190,6 +227,9 @@ async function initializeDatabase() {
 
   await connection.end();
   console.log(`Database '${DB_NAME}' initialized successfully.`);
+
+  // Seed cashbook_categories if empty — must happen AFTER migrations create the table
+  // We use a fresh pool connection since initializeDatabase uses a single connection
 }
 
 module.exports = initializeDatabase;
