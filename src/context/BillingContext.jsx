@@ -108,6 +108,13 @@ export const BillingProvider = ({ children }) => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (businessProfile?.name && businessProfile.name.trim() !== '') {
+      document.title = businessProfile.name;
+    }
+  }, [businessProfile?.name]);
+
+
   const addBill = async (billData) => {
     const newBill = await apiRequest('/bills', {
       method: 'POST',

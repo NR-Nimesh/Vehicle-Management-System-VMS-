@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, FileText, History, Package, Briefcase, Menu, X, Car, Users, LogOut, BookOpen } from 'lucide-react';
+import { Home, FileText, History, Package, Briefcase, Menu, X, Car, Users, BookOpen } from 'lucide-react';
 import { useBilling } from '../context/BillingContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -44,27 +44,29 @@ export default function Navbar() {
     return location.pathname.startsWith(path);
   };
 
+  const brandName = businessProfile?.name || 'AutoDrive VMS';
+
   return (
     <>
-      <nav className="glass-panel sticky top-4 z-50 mb-8 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 border-slate-700/30 rounded-2xl no-print">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center min-w-0">
-            <Link
-              to="/"
-              className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-extrabold text-xl tracking-tight transition-colors"
-            >
-              <div className="bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20 shrink-0">
-                <Car size={24} className="text-indigo-400" />
+      {/* ── MAIN NAVBAR ─────────────────────────────────────────────────────── */}
+      <nav className="navbar-root no-print">
+        {/* Two-section flex row: LEFT brand | RIGHT nav links or hamburger */}
+        <div className="navbar-inner">
+
+          {/* ── LEFT: Logo + Brand Name ─────────────────────────────────────── */}
+          <div className="navbar-brand">
+            <Link to="/" className="navbar-brand-link">
+              <div className="navbar-logo-box">
+                <Car size={22} />
               </div>
-              <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent truncate max-w-[140px] sm:max-w-[220px]">
-                {businessProfile?.name || 'AutoDrive VMS'}
+              <span className="navbar-brand-text" title={brandName}>
+                {brandName}
               </span>
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-2 items-center">
+          {/* ── RIGHT (Desktop ≥1024px): Inline nav links ───────────────────── */}
+          <div className="navbar-desktop-links">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -72,90 +74,69 @@ export default function Navbar() {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                    active
-                      ? 'bg-indigo-600/90 text-white shadow-lg shadow-indigo-600/20 scale-105 border border-indigo-500/30'
-                      : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 border border-transparent'
-                  }`}
+                  className={`navbar-link ${active ? 'navbar-link--active' : 'navbar-link--inactive'}`}
                 >
-                  <Icon size={16} />
-                  {item.name}
+                  <Icon size={15} className="navbar-link-icon" />
+                  <span>{item.name}</span>
                 </Link>
               );
             })}
-            <button
-              onClick={logout}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 border border-transparent"
-            >
-              <LogOut size={16} />
-              Logout
-            </button>
           </div>
 
-          {/* Mobile hamburger button — 48×48px tap target */}
-          <div className="flex md:hidden">
+          {/* ── RIGHT (Mobile/Tablet <1024px): Hamburger button ─────────────── */}
+          <div className="navbar-hamburger">
             <button
               onClick={() => setIsOpen(true)}
               aria-label="Open navigation menu"
-              className="inline-flex items-center justify-center min-w-[48px] min-h-[48px] rounded-xl text-slate-400 hover:bg-slate-800/80 hover:text-slate-100 focus:outline-none transition-colors border border-slate-700/20 active:scale-95 touch-manipulation"
+              className="navbar-hamburger-btn"
             >
               <Menu size={22} />
             </button>
           </div>
+
         </div>
       </nav>
 
-      {/* ── MOBILE DRAWER OVERLAY ──────────────────────────────────────────── */}
-      {/* Backdrop */}
+      {/* ── DRAWER BACKDROP ─────────────────────────────────────────────────── */}
       <div
-        className={`fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`drawer-backdrop ${isOpen ? 'drawer-backdrop--open' : ''}`}
         onClick={() => setIsOpen(false)}
         aria-hidden="true"
       />
 
-      {/* Drawer Panel */}
+      {/* ── DRAWER PANEL ────────────────────────────────────────────────────── */}
       <div
-        className={`fixed top-0 right-0 bottom-0 z-[70] w-72 max-w-[85vw] bg-slate-900 border-l border-slate-700/50 shadow-2xl transition-transform duration-300 ease-in-out md:hidden flex flex-col ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`drawer-panel ${isOpen ? 'drawer-panel--open' : ''}`}
         style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {/* Drawer Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="bg-indigo-500/10 p-1.5 rounded-xl border border-indigo-500/20">
-              <Car size={20} className="text-indigo-400" />
+        <div className="drawer-header">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="navbar-logo-box">
+              <Car size={18} />
             </div>
-            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-extrabold text-base truncate max-w-[150px]">
-              {businessProfile?.name || 'AutoDrive VMS'}
-            </span>
+            <span className="drawer-brand-text" title={brandName}>{brandName}</span>
           </div>
           <button
             onClick={() => setIsOpen(false)}
             aria-label="Close navigation menu"
-            className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors active:scale-95 touch-manipulation"
+            className="drawer-close-btn"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Drawer User Info */}
-        <div className="px-5 py-3 border-b border-slate-800/60">
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Signed in as</p>
-          <p className="text-sm font-bold text-slate-200 mt-0.5">{user?.username}</p>
-          <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-            user?.role === 'admin'
-              ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-              : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-          }`}>
+        <div className="drawer-user-info">
+          <p className="drawer-user-label">Signed in as</p>
+          <p className="drawer-user-name">{user?.username}</p>
+          <span className={`drawer-role-badge ${user?.role === 'admin' ? 'drawer-role-badge--admin' : 'drawer-role-badge--user'}`}>
             {user?.role}
           </span>
         </div>
 
         {/* Drawer Nav Links */}
-        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+        <div className="drawer-nav-links">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -164,11 +145,7 @@ export default function Navbar() {
                 key={item.name}
                 to={item.path}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-4 min-h-[52px] rounded-xl text-base font-medium transition-all active:scale-[0.97] touch-manipulation ${
-                  active
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100 active:bg-slate-700/60'
-                }`}
+                className={`drawer-nav-link ${active ? 'drawer-nav-link--active' : 'drawer-nav-link--inactive'}`}
               >
                 <Icon size={20} />
                 {item.name}
@@ -177,16 +154,7 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* Drawer Footer — Logout */}
-        <div className="px-3 pb-3 border-t border-slate-800/60 pt-3">
-          <button
-            onClick={() => { setIsOpen(false); logout(); }}
-            className="flex items-center gap-3 px-4 min-h-[52px] w-full rounded-xl text-base font-medium transition-all text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 active:scale-[0.97] touch-manipulation text-left"
-          >
-            <LogOut size={20} />
-            Logout
-          </button>
-        </div>
+
       </div>
     </>
   );

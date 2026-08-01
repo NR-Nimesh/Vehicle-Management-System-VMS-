@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../utils/api';
-import { Users, Plus, Trash2, Edit2, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Users, Plus, Trash2, Edit2, CheckCircle2, AlertCircle, X, LogOut, ShieldCheck } from 'lucide-react';
 
 export default function UserManagement() {
+  const { user, logout } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -104,6 +106,35 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
+
+      {/* ── Account / Session Card ──────────────────────────────────────── */}
+      <div className="glass-panel p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
+            <ShieldCheck size={22} className="text-indigo-400" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Signed in as</p>
+            <p className="text-base font-bold text-slate-100 mt-0.5">{user?.username}</p>
+            <span className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+              user?.role === 'admin'
+                ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+            }`}>
+              {user?.role}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={logout}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/40 transition-all active:scale-95 touch-manipulation min-h-[44px]"
+        >
+          <LogOut size={17} />
+          Logout
+        </button>
+      </div>
+
+      {/* ── Page Header + Add User ──────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
